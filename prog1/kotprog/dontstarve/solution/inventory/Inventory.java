@@ -12,8 +12,20 @@ public class Inventory implements BaseInventory {
     public Inventory() {
     }
 
+    /**
+     * @param index ellenorzi, hogy helyes-e az index
+     * @return hogy helyes volt-e
+     */
+    public boolean validIndex(int index) {
+        return index < inventory.length && index >= 0;
+    }
+
+    /**
+     * @param index -en levo poziciot ellenorzi, hogy null-e, vagyis hogy van-e ott valami vagy nincs
+     * @return hogy talált-e ott valamit
+     */
     public boolean hasItem(int index) {
-        if (index < inventory.length && index >= 0) {
+        if (validIndex(index)) {
             if (inventory[index] != null) {
                 if (inventory[index].getAmount() == 0) {
                     inventory[index] = null;
@@ -25,6 +37,10 @@ public class Inventory implements BaseInventory {
         return false;
     }
 
+    /**
+     * @param item a hozzáadni kívánt tárgy
+     * @return hogy sikerult-e
+     */
     @Override
     public boolean addItem(AbstractItem item) {
         if (emptySlots() == 0) {
@@ -33,13 +49,16 @@ public class Inventory implements BaseInventory {
         int remainingItems = item.getAmount();
 
         for (int i = 0; i < inventory.length; i++) {
-            int currentSlotAmount = inventory[i].getAmount();
+            int currentSlotAmount = 0;
+            if (hasItem(i)) {
+                currentSlotAmount = inventory[i].getAmount();
+            }
             if (!hasItem(i) && !item.getType().isStackable()) {
                 inventory[i] = item;
                 return true;
             } else if (hasItem(i) && inventory[i].getType().equals(item.getType()) && item.getType().isStackable() && currentSlotAmount < inventory[i].getType().getMaxStackAmount()) {
                 int newAmount = inventory[i].getType().getMaxStackAmount() - currentSlotAmount;
-                inventory[i].setAmount(remainingItems);
+                inventory[i].setAmount(inventory[i].getAmount() + newAmount);
                 remainingItems -= newAmount;
                 if (remainingItems <= 0) {
                     return true;
@@ -47,9 +66,7 @@ public class Inventory implements BaseInventory {
 
             }
         }
-        if (emptySlots() == 0) {
-            return false;
-        }
+
         for (int j = 0; j < inventory.length; j++) {
             if (!hasItem(j)) {
                 inventory[j] = item;
@@ -61,16 +78,21 @@ public class Inventory implements BaseInventory {
             }
         }
         if (remainingItems > 0) {
-            System.out.println("A targybol ennyi maradt ki, amit nem adtunk hozza: " + remainingItems);
+            item.setAmount(remainingItems);
+            System.err.println("A targybol ennyi maradt ki, amit nem adtunk hozza: " + item.getAmount());
             return false;
         }
         return false;
     }
 
 
+    /**
+     * @param index a slot indexe, amelyen lévő itemet szeretnénk eldobni
+     * @return hogy sikerult-e
+     */
     @Override
     public AbstractItem dropItem(int index) {
-        if (index >= 0 && index < inventory.length && hasItem(index)) {
+        if (validIndex(index) && hasItem(index)) {
             AbstractItem droppableItem = inventory[index];
             inventory[index] = null;
             return droppableItem;
@@ -78,6 +100,11 @@ public class Inventory implements BaseInventory {
         return null;
     }
 
+    /**
+     * @param type   a törlendő item típusa
+     * @param amount a törlendő item mennyisége
+     * @return sikerult-e torolni
+     */
     @Override
     public boolean removeItem(ItemType type, int amount) {
         int inventoryAmount = 0;
@@ -114,9 +141,14 @@ public class Inventory implements BaseInventory {
         return false;
     }
 
+    /**
+     * @param index1 a slot indexe, amelyen az első item található
+     * @param index2 a slot indexe, amelyen a második item található
+     * @return sikerult-e kicserelni
+     */
     @Override
     public boolean swapItems(int index1, int index2) {
-        if (index1 < inventory.length && index2 < inventory.length && index1 >= 0 && index2 >= 0) {
+        if (validIndex(index1) && validIndex(index2)) {
             if (hasItem(index1) && hasItem(index2)) {
                 AbstractItem temp = inventory[index1];
                 inventory[index1] = inventory[index2];
@@ -127,9 +159,14 @@ public class Inventory implements BaseInventory {
         return false;
     }
 
+    /**
+     * @param index    a mozgatni kívánt item pozíciója az inventory-ban
+     * @param newIndex az új pozíció, ahova mozgatni szeretnénk az itemet
+     * @return sikerult-e mozgatni
+     */
     @Override
     public boolean moveItem(int index, int newIndex) {
-        if (index < inventory.length && newIndex < inventory.length && index >= 0 && newIndex >= 0) {
+        if (validIndex(index) && validIndex(newIndex)) {
             if (hasItem(index) && !hasItem(newIndex)) {
                 inventory[newIndex] = inventory[index];
                 inventory[index] = null;
@@ -139,10 +176,15 @@ public class Inventory implements BaseInventory {
         return false;
     }
 
+    /**
+     * @param index1 első item pozíciója az inventory-ban
+     * @param index2 második item pozíciója az inventory-ban
+     * @return sikerult-e összevonni
+     */
     @Override
     public boolean combineItems(int index1, int index2) {
 
-        if (index1 < inventory.length && index2 < inventory.length && index1 >= 0 && index2 >= 0 && hasItem(index1) && hasItem(index2) && inventory[index1].getType().equals(inventory[index2].getType()) && inventory[index1].getType().isStackable()) {
+        if (validIndex(index1) && validIndex(index2) && hasItem(index1) && hasItem(index2) && inventory[index1].getType().equals(inventory[index2].getType()) && inventory[index1].getType().isStackable()) {
 
             if (inventory[index1].getAmount() == inventory[index1].getType().getMaxStackAmount()) {
                 return false;
@@ -163,11 +205,16 @@ public class Inventory implements BaseInventory {
         return false;
     }
 
+    /**
+     * @param index a kézbe venni kívánt tárgy pozíciója az inventory-ban
+     * @return sikerult-e kézbe venni
+     */
     @Override
     public boolean equipItem(int index) {
-        if (index < inventory.length && index >= 0 && hasItem(index) && inventory[index].getType().isEquippable()) {
+        if (validIndex(index) && hasItem(index) && inventory[index].getType().isEquippable()) {
             if (equippedItem.getEquippedItem() == null) {
                 equippedItem.setEquippedItem((EquippableItem) inventory[index]);
+                inventory[index] = null;
                 return true;
             } else {
                 AbstractItem temp = inventory[index];
@@ -179,14 +226,36 @@ public class Inventory implements BaseInventory {
         return false;
     }
 
+    /**
+     * @return hogy milyen itemet vettunk ki a kezunkbol
+     */
     @Override
     public EquippableItem unequipItem() {
+        if (equippedItem != null) {
+            if (emptySlots() == 0) {
+                EquippableItem temp = equippedItem.getEquippedItem();
+                equippedItem.setEquippedItem(null);
+                return temp;
+            }
+            for (int i = 0; i < inventory.length; i++) {
+                if (!hasItem(i)) {
+                    inventory[i] = equippedItem.getEquippedItem();
+                    equippedItem.setEquippedItem(null);
+                    return null;
+                }
+            }
+
+        }
         return null;
     }
 
+    /**
+     * @param index A megfőzni kívánt item pozíciója az inventory-ban
+     * @return hogy mit foztunk meg
+     */
     @Override
     public ItemType cookItem(int index) {
-        if (index >= 0 && index < inventory.length && hasItem(index) && inventory[index].getType().isCookable()) {
+        if (validIndex(index) && hasItem(index) && inventory[index].getType().isCookable()) {
             ItemType cookableItem = inventory[index].getType();
             inventory[index].setAmount(inventory[index].getAmount() - 1);
             if (inventory[index].getAmount() == 0) {
@@ -197,9 +266,13 @@ public class Inventory implements BaseInventory {
         return null;
     }
 
+    /**
+     * @param index A megenni kívánt item pozíciója az inventory-ban
+     * @return hogy mit ettunk meg
+     */
     @Override
     public ItemType eatItem(int index) {
-        if (index >= 0 && index < inventory.length && hasItem(index) && inventory[index].getType().isEdible()) {
+        if (validIndex(index) && hasItem(index) && inventory[index].getType().isEdible()) {
             ItemType food = inventory[index].getType();
             inventory[index].setAmount(inventory[index].getAmount() - 1);
             if (inventory[index].getAmount() == 0) {
@@ -210,6 +283,9 @@ public class Inventory implements BaseInventory {
         return null;
     }
 
+    /**
+     * @return mennyi ures hely van az inventoryban
+     */
     @Override
     public int emptySlots() {
         if (inventory == null) {
@@ -224,6 +300,9 @@ public class Inventory implements BaseInventory {
         return emptySlotAmount;
     }
 
+    /**
+     * @return hogy mi volt a kezeben a karakternek
+     */
     @Override
     public EquippableItem equippedItem() {
         if (equippedItem.getEquippedItem() != null) {
@@ -232,9 +311,13 @@ public class Inventory implements BaseInventory {
         return null;
     }
 
+    /**
+     * @param index a lekérdezni kívánt pozíció
+     * @return hogy milyen item volt ott
+     */
     @Override
     public AbstractItem getItem(int index) {
-        if (index >= 0 && index < inventory.length && hasItem(index)) {
+        if (validIndex(index) && hasItem(index)) {
             return inventory[index];
         }
 
