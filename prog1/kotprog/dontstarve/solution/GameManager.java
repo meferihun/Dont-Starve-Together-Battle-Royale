@@ -105,6 +105,7 @@ public final class GameManager {
                     newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
                     newCharacter.addItem(newItem);
                 }
+                playersInTheGame.add(playersInTheGame.size(), newCharacter);
                 boolean[][] mapSlots = new boolean[level.getWidth()][level.getHeight()];
                 for (int x = 0; x < level.getWidth(); x++) {
                     for (int y = 0; y < level.getHeight(); y++) {
@@ -124,10 +125,16 @@ public final class GameManager {
                 boolean[][] mapAvailableSlots = mapSlots.clone();
                 float distance = 50;
                 int blockedFields = 0;
+                int index = 0;
                 for (int x = 0; x < level.getWidth(); x++) {
                     for (int y = 0; y < level.getHeight(); y++) {
                         if (mapAvailableSlots[x][y]) {
                             mapAvailableSlots[x][y] = false;
+                            playersInTheGame.get(index).setCurrentPosition(new Position(x, y));
+                            if (index == playersInTheGame.size() - 1) {
+                                newPlayerPosition = playersInTheGame.get(index).getCurrentPosition();
+                            }
+                            index++;
                             if (x + distance < level.getWidth() && y + distance < level.getHeight()) {
                                 for (int z = 0; z < distance; z++) {
                                     if (x + z < level.getWidth() && y + z < level.getHeight()) {
@@ -156,8 +163,6 @@ public final class GameManager {
                         }
                     }
                 }
-
-                playersInTheGame.add(playersInTheGame.size(), newCharacter);
 
 
                 return newPlayerPosition;
