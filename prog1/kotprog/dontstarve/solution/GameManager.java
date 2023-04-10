@@ -29,6 +29,7 @@ public final class GameManager {
     private final Random random = new Random();
     private List<Character> playersInTheGame = new ArrayList<>();
     private Level level;
+    private int[][] map;
 
     /**
      * Az osztály privát konstruktora.
@@ -85,41 +86,77 @@ public final class GameManager {
             isPlayerJoinedAlready = true;
         }
 
-        Character newCharacter = new Character(name, player);
-        AbstractItem[] types = new AbstractItem[]{new ItemRawCarrot(0), new ItemTwig(0), new ItemRawBerry(0), new ItemLog(0), new ItemStone(0)};
-        for (int i = 0; i < 4; i++) {
-            int randomInt = getRandom().nextInt(types.length);
-            AbstractItem newItem = null;
-            if (types[randomInt] != null) {
-                newItem = types[randomInt];
-            } else {
-                
-            }
-            types[randomInt] = null;
-            newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
-            newCharacter.addItem(newItem);
-        }
+        AbstractItem[] items = new AbstractItem[]{new ItemRawCarrot(0), new ItemTwig(0), new ItemRawBerry(0), new ItemLog(0), new ItemStone(0)};
 
         if (isLevelLoaded() && !isGameStarted()) {
             if ((isPlayerJoinedAlready && !player) || (!isPlayerJoinedAlready && player)) {
                 Position newPlayerPosition = new Position(0, 0);
-                float distance = 50f;
-                for (Character current : playersInTheGame) {
-                    float[][] latestPosition = {{current.getCurrentPosition().getX(), current.getCurrentPosition().getY()}};
-                    if (latestPosition[0][0] + distance <= level.getWidth()) {
-                        newPlayerPosition.setX(latestPosition[0][0] + distance);
-                        newPlayerPosition.setY(latestPosition[0][1]);
-                        break;
-                    } else if (latestPosition[0][1] + distance <= level.getHeight()) {
-                        newPlayerPosition.setY(latestPosition[0][1] + distance);
-                        newPlayerPosition.setX(latestPosition[0][0]);
-                        break;
+                Character newCharacter = new Character(name, player);
+                for (int i = 0; i < 4; i++) {
+                    int randomInt = getRandom().nextInt(items.length);
+                    AbstractItem newItem;
+                    if (items[randomInt] != null) {
+                        newItem = items[randomInt];
+                    } else {
+                        i--;
+                        continue;
                     }
-                    if (newPlayerPosition.getY() == 0 && newPlayerPosition.getX() == 0) {
-                        distance -= 5;
-                    }
-
+                    items[randomInt] = null;
+                    newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
+                    newCharacter.addItem(newItem);
                 }
+                boolean[][] mapSlots = new boolean[level.getWidth()][level.getHeight()];
+                for (int x = 0; x < level.getWidth(); x++) {
+                    for (int y = 0; y < level.getHeight(); y++) {
+                        Field current = new Field(map[x][y]);
+                        if (current.hasBerry() || current.hasCarrot() || current.hasFire() || current.hasTwig()) {
+                            if (current.hasTree() || current.hasStone() || current.isWalkable()) {
+                                mapSlots[x][y] = true;
+                            } else {
+                                mapSlots[x][y] = false;
+                            }
+                        } else {
+                            mapSlots[x][y] = false;
+                        }
+                    }
+                }
+
+                boolean[][] mapAvailableSlots = mapSlots.clone();
+                float distance = 50;
+                int blockedFields = 0;
+                for (int x = 0; x < level.getWidth(); x++) {
+                    for (int y = 0; y < level.getHeight(); y++) {
+                        if (mapAvailableSlots[x][y]) {
+                            mapAvailableSlots[x][y] = false;
+                            if (x + distance < level.getWidth() && y + distance < level.getHeight()) {
+                                for (int z = 0; z < distance; z++) {
+                                    if (x + z < level.getWidth() && y + z < level.getHeight()) {
+                                        mapAvailableSlots[x + z][y + z] = false;
+                                        blockedFields++;
+                                    }
+                                }
+                            } else if (x - distance >= 0 && y - distance >= 0) {
+                                for (int k = 0; k < distance; k++) {
+                                    if (x - k >= 0 && y + k >= 0) {
+                                        mapAvailableSlots[x - k][y - k] = false;
+                                        blockedFields++;
+                                    }
+                                }
+                            }
+                        }
+
+
+                        if (blockedFields == level.getHeight() * level.getWidth()) {
+                            distance -= 5;
+                            x = 0;
+                            y = 0;
+                            if (distance < 5) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 playersInTheGame.add(playersInTheGame.size(), newCharacter);
 
 
@@ -138,6 +175,9 @@ public final class GameManager {
     public BaseCharacter getCharacter(String name) {
         for (Character current : playersInTheGame) {
             if (current.getName().equals(name)) {
+                if (current.getHp() == 0) {
+                    return null;
+                }
                 return current;
             }
         }
@@ -150,7 +190,13 @@ public final class GameManager {
      * @return Az életben lévő karakterek száma
      */
     public int remainingCharacters() {
-        return playersInTheGame.size();
+        int aliveOnes = 0;
+        for (Character current : playersInTheGame) {
+            if (current.getHp() > 0) {
+                aliveOnes++;
+            }
+        }
+        return aliveOnes;
     }
 
     /**
