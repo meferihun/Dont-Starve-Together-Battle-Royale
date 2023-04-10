@@ -6,11 +6,7 @@ import prog1.kotprog.dontstarve.solution.inventory.items.AbstractItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.utility.Position;
 
-import java.util.Map;
-
 public class Character implements BaseCharacter {
-
-    private EquippableItem equippedItem;
 
     private Action lastAction;
 
@@ -19,26 +15,30 @@ public class Character implements BaseCharacter {
     private float hunger;
     private float speed = 1;
     private Position currentPosition;
+    private boolean player;
+    private AbstractItem[] inventory = new AbstractItem[10];
 
-    public Character() {
+    public Character(String name, boolean player) {
+        this.name = name;
+        this.player = player;
     }
 
     /**
-     * @return
+     * @return játékos-e
      */
-    public EquippableItem getEquippedItem() {
-        return equippedItem;
+    public boolean isPlayer() {
+        return player;
     }
 
     /**
-     * @param equippedItem
+     * @param player beallitas, hogy ő jatekos-e
      */
-    public void setEquippedItem(EquippableItem equippedItem) {
-        this.equippedItem = equippedItem;
+    public void setPlayer(boolean player) {
+        this.player = player;
     }
 
     /**
-     * beallitja a sebesseget a karakternek
+     * beallitasa a speednek
      */
     public void setSpeed() {
         this.speed = 1;
@@ -64,7 +64,7 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @return
+     * @return hogy mennyi a karakternek a sebessege
      */
     @Override
     public float getSpeed() {
@@ -72,7 +72,7 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @param hunger
+     * @param hunger es beallitja az ehseget a megfelelo ertekre
      */
     public void setHunger(float hunger) {
         if (hunger >= 100) {
@@ -85,13 +85,16 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @return
+     * @return hogy mennyi az ehsege a karakternek
      */
     @Override
     public float getHunger() {
         return hunger;
     }
 
+    /**
+     * @param hp es beallitja az eletet a megfelelo ertekre
+     */
     public void setHp(float hp) {
         if (hp >= 100) {
             this.healthPoint = 100;
@@ -103,42 +106,55 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @return
+     * @return hogy mennyi a karakter elete
      */
     @Override
     public float getHp() {
         return healthPoint;
     }
 
+    public void addItem(AbstractItem item) {
+        for (AbstractItem currentSlot : inventory) {
+            if (currentSlot != null) {
+                currentSlot = item;
+                currentSlot.setAmount(item.getAmount());
+                break;
+            }
+        }
+    }
+
     /**
-     * @return
+     * @return az inventory tartalma
      */
     @Override
     public BaseInventory getInventory() {
         return null;
     }
 
-    @Override
-    public Position getCurrentPosition() {
-        return currentPosition;
-    }
-
     /**
-     * @param currentPosition
+     * @param currentPosition beallitja a karakter aktualis poziciojat a kapott ertekre
      */
     public void setCurrentPosition(Position currentPosition) {
         this.currentPosition = currentPosition;
     }
 
     /**
-     * @param lastAction
+     * @return a karakternek az aktualis pozicioja
+     */
+    @Override
+    public Position getCurrentPosition() {
+        return currentPosition;
+    }
+
+    /**
+     * @param lastAction beallitja az ertekre, hogy mi volt az utolso cselekvese
      */
     private void setLastAction(Action lastAction) {
         this.lastAction = lastAction;
     }
 
     /**
-     * @return
+     * @return hogy mi volt az utolso cselekvese
      */
     @Override
     public Action getLastAction() {
@@ -146,14 +162,7 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @param name
-     */
-    private void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @return
+     * @return mi a karakter neve
      */
     @Override
     public String getName() {

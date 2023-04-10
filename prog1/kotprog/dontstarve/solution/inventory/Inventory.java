@@ -2,15 +2,13 @@ package prog1.kotprog.dontstarve.solution.inventory;
 
 import prog1.kotprog.dontstarve.solution.character.Character;
 import prog1.kotprog.dontstarve.solution.inventory.items.AbstractItem;
+import prog1.kotprog.dontstarve.solution.inventory.items.EquipItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
 public class Inventory implements BaseInventory {
     private AbstractItem[] inventory = new AbstractItem[10];
-    private Character equippedItem = new Character();
-
-    public Inventory() {
-    }
+    private final EquipItem equippedItem = new EquipItem();
 
     /**
      * @param index ellenorzi, hogy helyes-e az index
@@ -50,39 +48,53 @@ public class Inventory implements BaseInventory {
 
         for (int i = 0; i < inventory.length; i++) {
             int currentSlotAmount = 0;
+
             if (hasItem(i)) {
                 currentSlotAmount = inventory[i].getAmount();
             }
+
             if (!hasItem(i) && !item.getType().isStackable()) {
                 inventory[i] = item;
                 return true;
-            } else if (hasItem(i) && inventory[i].getType().equals(item.getType()) && item.getType().isStackable() && currentSlotAmount < inventory[i].getType().getMaxStackAmount()) {
-                int newAmount = inventory[i].getType().getMaxStackAmount() - currentSlotAmount;
-                inventory[i].setAmount(inventory[i].getAmount() + newAmount);
-                remainingItems -= newAmount;
-                if (remainingItems <= 0) {
-                    return true;
+            } else if (hasItem(i) && inventory[i].getType().equals(item.getType()) && item.getType().isStackable()) {
+                if (currentSlotAmount < inventory[i].getType().getMaxStackAmount()) {
+                    int remainingCapacity = inventory[i].getType().getMaxStackAmount() - currentSlotAmount;
+                    if (remainingCapacity >= remainingItems) {
+                        inventory[i].setAmount(currentSlotAmount + remainingItems);
+                        remainingItems = 0;
+                    } else {
+                        inventory[i].setAmount(inventory[i].getType().getMaxStackAmount());
+                        remainingItems -= remainingCapacity;
+                    }
+                    if (remainingItems == 0) {
+                        return true;
+                    }
                 }
-
             }
         }
 
         for (int j = 0; j < inventory.length; j++) {
             if (!hasItem(j)) {
                 inventory[j] = item;
-                inventory[j].setAmount(remainingItems);
-                remainingItems -= inventory[j].getAmount();
-            }
-            if (remainingItems <= 0) {
-                return true;
+                int currentSlotMaxAmount = inventory[j].getType().getMaxStackAmount();
+                if (currentSlotMaxAmount >= remainingItems) {
+                    inventory[j].setAmount(remainingItems);
+                    remainingItems = 0;
+                } else {
+                    inventory[j].setAmount(currentSlotMaxAmount);
+                    remainingItems -= currentSlotMaxAmount;
+                }
+                if (remainingItems == 0) {
+                    return true;
+                }
             }
         }
         if (remainingItems > 0) {
             item.setAmount(remainingItems);
-            System.err.println("A targybol ennyi maradt ki, amit nem adtunk hozza: " + item.getAmount());
+            System.err.println("A targybol ennyi maradt ki, amit nem adtunk hozza: " + remainingItems);
             return false;
         }
-        return false;
+        return true;
     }
 
 
@@ -184,22 +196,23 @@ public class Inventory implements BaseInventory {
     @Override
     public boolean combineItems(int index1, int index2) {
 
-        if (validIndex(index1) && validIndex(index2) && hasItem(index1) && hasItem(index2) && inventory[index1].getType().equals(inventory[index2].getType()) && inventory[index1].getType().isStackable()) {
+        if (validIndex(index1) && validIndex(index2) && hasItem(index1) && hasItem(index2)) {
+            if (inventory[index1].getType().equals(inventory[index2].getType()) && inventory[index1].getType().isStackable()) {
+                if (inventory[index1].getAmount() == inventory[index1].getType().getMaxStackAmount()) {
+                    return false;
+                }
 
-            if (inventory[index1].getAmount() == inventory[index1].getType().getMaxStackAmount()) {
-                return false;
-            }
+                if (inventory[index1].getType().getMaxStackAmount() >= (inventory[index1].getAmount() + inventory[index2].getAmount())) {
+                    inventory[index1].setAmount(inventory[index1].getAmount() + inventory[index2].getAmount());
+                    inventory[index2] = null;
+                    return true;
 
-            if (inventory[index1].getType().getMaxStackAmount() >= (inventory[index1].getAmount() + inventory[index2].getAmount())) {
-                inventory[index1].setAmount(inventory[index1].getAmount() + inventory[index2].getAmount());
-                inventory[index2] = null;
-                return true;
-
-            } else {
-                int left = inventory[index1].getType().getMaxStackAmount() - inventory[index1].getAmount();
-                inventory[index1].setAmount(inventory[index1].getAmount() + inventory[index2].getAmount());
-                inventory[index2].setAmount(inventory[index2].getAmount() - left);
-                return true;
+                } else {
+                    int left = inventory[index1].getType().getMaxStackAmount() - inventory[index1].getAmount();
+                    inventory[index1].setAmount(inventory[index1].getAmount() + inventory[index2].getAmount());
+                    inventory[index2].setAmount(inventory[index2].getAmount() - left);
+                    return true;
+                }
             }
         }
         return false;

@@ -46,12 +46,10 @@ public abstract class AbstractItem {
     }
 
     /**
-     * az amount beállítása
+     * amount settere
      *
-     * @param amount amit elvár
-     *               és beállítja rá
+     * @param amount beallitasa
      */
-
     public void setAmount(int amount) {
         if (amount <= 0) {
             this.amount = 0;

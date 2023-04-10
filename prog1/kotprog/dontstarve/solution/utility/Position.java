@@ -1,7 +1,5 @@
 package prog1.kotprog.dontstarve.solution.utility;
 
-import prog1.kotprog.dontstarve.solution.exceptions.NotImplementedException;
-
 /**
  * Egy 2 dimenziós (x, y) koordinátát leíró osztály.
  */
@@ -18,6 +16,7 @@ public class Position {
 
     /**
      * Két paraméteres konstruktor, amely segítségével egy új pozíciót lehet létrehozni.
+     *
      * @param x vízszintes (x) irányú koordináta
      * @param y függőleges (y) irányú koordináta
      */
@@ -29,14 +28,18 @@ public class Position {
     /**
      * Az aktuális koordinátához legközelebbi, csak egész értékű komponensekből álló koordináta kiszámítása.<br>
      * A kerekítés a matematika szabályainak megfelelően történik.
+     *
      * @return a kiszámolt pozíció
      */
     public Position getNearestWholePosition() {
-        throw new NotImplementedException();
+        float nearX = Math.round(getX());
+        float nearY = Math.round(getY());
+        return new Position(nearX, nearY);
     }
 
     /**
      * x koordináta gettere.
+     *
      * @return x koordináta
      */
     public float getX() {
@@ -44,15 +47,8 @@ public class Position {
     }
 
     /**
-     * y koordináta gettere.
-     * @return y koordináta
-     */
-    public float getY() {
-        return y;
-    }
-
-    /**
      * x koordináta settere.
+     *
      * @param x új x érték
      */
     public void setX(float x) {
@@ -60,7 +56,17 @@ public class Position {
     }
 
     /**
+     * y koordináta gettere.
+     *
+     * @return y koordináta
+     */
+    public float getY() {
+        return y;
+    }
+
+    /**
      * y koordináta settere.
+     *
      * @param y új y érték
      */
     public void setY(float y) {
