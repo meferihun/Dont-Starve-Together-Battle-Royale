@@ -94,7 +94,7 @@ public class Inventory implements BaseInventory {
             System.err.println("A targybol ennyi maradt ki, amit nem adtunk hozza: " + remainingItems);
             return false;
         }
-        return true;
+        return false;
     }
 
 

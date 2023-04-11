@@ -9,18 +9,30 @@ import prog1.kotprog.dontstarve.solution.utility.Position;
 public class Character implements BaseCharacter {
 
     private Action lastAction;
-
+    private Action action;
     private String name;
     private float healthPoint;
     private float hunger;
-    private float speed = 1;
+    private float speed;
     private Position currentPosition;
     private boolean player;
     private AbstractItem[] inventory = new AbstractItem[10];
 
     public Character(String name, boolean player) {
-        this.name = name;
+        if (name != null || name != "") {
+            this.name = name;
+        } else {
+            this.name = "New Player";
+        }
         this.player = player;
+    }
+
+    public Action getAction() {
+        return action;
+    }
+
+    public void setAction(Action action) {
+        this.action = action;
     }
 
     /**
@@ -45,9 +57,9 @@ public class Character implements BaseCharacter {
         if (getHp() > 50 && getHp() <= 100) {
             this.speed *= 1;
         } else if (getHp() > 30 && getHp() <= 50) {
-            this.speed *= 0.9f;
+            this.speed *= 0.9;
         } else if (getHp() > 10 && getHp() <= 30) {
-            this.speed *= 0.75f;
+            this.speed *= 0.75;
         } else if (getHp() >= 0 && getHp() <= 10) {
             this.speed *= 0.6f;
         }
@@ -55,9 +67,9 @@ public class Character implements BaseCharacter {
         if (getHunger() > 50 && getHunger() <= 100) {
             this.speed *= 1;
         } else if (getHunger() > 20 && getHunger() <= 50) {
-            this.speed *= 0.9f;
+            this.speed *= 0.9;
         } else if (getHunger() > 0 && getHunger() <= 20) {
-            this.speed *= 0.8f;
+            this.speed *= 0.8;
         } else if (getHunger() == 0) {
             this.speed *= 0.5;
         }

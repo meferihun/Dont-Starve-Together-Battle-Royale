@@ -3,11 +3,14 @@ package prog1.kotprog.dontstarve.solution;
 import prog1.kotprog.dontstarve.solution.character.BaseCharacter;
 import prog1.kotprog.dontstarve.solution.character.Character;
 import prog1.kotprog.dontstarve.solution.character.actions.Action;
+import prog1.kotprog.dontstarve.solution.character.actions.ActionStep;
+import prog1.kotprog.dontstarve.solution.character.actions.ActionType;
 import prog1.kotprog.dontstarve.solution.exceptions.NotImplementedException;
 import prog1.kotprog.dontstarve.solution.inventory.items.*;
 import prog1.kotprog.dontstarve.solution.level.BaseField;
 import prog1.kotprog.dontstarve.solution.level.Field;
 import prog1.kotprog.dontstarve.solution.level.Level;
+import prog1.kotprog.dontstarve.solution.utility.Direction;
 import prog1.kotprog.dontstarve.solution.utility.Position;
 
 import java.util.ArrayList;
@@ -27,14 +30,17 @@ public final class GameManager {
      * Random objektum, amit a játék során használni lehet.
      */
     private final Random random = new Random();
-    private List<Character> playersInTheGame = new ArrayList<>();
+    private List<Character> playersInTheGame;
     private Level level;
-    private int[][] map;
+    private boolean gameStarted;
 
     /**
      * Az osztály privát konstruktora.
      */
     private GameManager() {
+        this.playersInTheGame = new ArrayList<>();
+        this.level = null;
+        this.gameStarted = false;
     }
 
     /**
@@ -72,12 +78,16 @@ public final class GameManager {
     public Position joinCharacter(String name, boolean player) {
         boolean isPlayerJoinedAlready = false;
         int humans = 0;
-        for (Character current : playersInTheGame) {
-            if (current.isPlayer()) {
-                humans++;
-            }
-            if (current.getName().equals(name)) {
-                return new Position(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        if (playersInTheGame != null && name != null && !name.equals("")) {
+            for (Character current : playersInTheGame) {
+                if (current != null) {
+                    if (current.isPlayer()) {
+                        humans++;
+                    }
+                    if (current.getName().equals(name)) {
+                        return new Position(Integer.MAX_VALUE, Integer.MAX_VALUE);
+                    }
+                }
             }
         }
         if (humans > 1 || (humans == 1 && player)) {
@@ -91,7 +101,10 @@ public final class GameManager {
         if (isLevelLoaded() && !isGameStarted()) {
             if ((isPlayerJoinedAlready && !player) || (!isPlayerJoinedAlready && player)) {
                 Position newPlayerPosition = new Position(0, 0);
-                Character newCharacter = new Character(name, player);
+                Character newCharacter = new Character("01", player);
+                if (name != null && !name.equals("")) {
+                    newCharacter = new Character(name, player);
+                }
                 for (int i = 0; i < 4; i++) {
                     int randomInt = getRandom().nextInt(items.length);
                     AbstractItem newItem;
@@ -105,11 +118,11 @@ public final class GameManager {
                     newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
                     newCharacter.addItem(newItem);
                 }
-                playersInTheGame.add(playersInTheGame.size(), newCharacter);
+                playersInTheGame.add(newCharacter);
                 boolean[][] mapSlots = new boolean[level.getWidth()][level.getHeight()];
                 for (int x = 0; x < level.getWidth(); x++) {
                     for (int y = 0; y < level.getHeight(); y++) {
-                        Field current = new Field(map[x][y]);
+                        Field current = new Field(level.getColor(x, y));
                         if (current.hasBerry() || current.hasCarrot() || current.hasFire() || current.hasTwig()) {
                             if (current.hasTree() || current.hasStone() || current.isWalkable()) {
                                 mapSlots[x][y] = true;
@@ -163,8 +176,6 @@ public final class GameManager {
                         }
                     }
                 }
-
-
                 return newPlayerPosition;
             }
         }
@@ -179,11 +190,13 @@ public final class GameManager {
      */
     public BaseCharacter getCharacter(String name) {
         for (Character current : playersInTheGame) {
-            if (current.getName().equals(name)) {
-                if (current.getHp() == 0) {
-                    return null;
+            if (current != null) {
+                if (current.getName().equals(name)) {
+                    if (current.getHp() == 0) {
+                        return null;
+                    }
+                    return current;
                 }
-                return current;
             }
         }
         return null;
@@ -254,12 +267,17 @@ public final class GameManager {
         if (!isLevelLoaded() || playersInTheGame.size() < 2) {
             return false;
         }
+        if (gameStarted) {
+            return false;
+        }
         for (Character current : playersInTheGame) {
             if (current.isPlayer()) {
+                gameStarted = true;
                 return true;
             }
         }
-        return true;
+
+        return false;
     }
 
     /**
@@ -301,7 +319,7 @@ public final class GameManager {
      * @return igaz, ha a játék már elkezdődött; hamis egyébként
      */
     public boolean isGameStarted() {
-        return startGame();
+        return gameStarted;
     }
 
     /**
@@ -324,4 +342,5 @@ public final class GameManager {
     public void setTutorial(boolean tutorial) {
         throw new NotImplementedException();
     }
+
 }

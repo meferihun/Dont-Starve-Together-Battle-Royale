@@ -43,7 +43,7 @@ public class Field implements BaseField {
 
     @Override
     public boolean hasFire() {
-        return placed.equals(ItemType.FIRE);
+        return true;
     }
 
     @Override
