@@ -19,7 +19,7 @@ public class Character implements BaseCharacter {
     private AbstractItem[] inventory = new AbstractItem[10];
 
     public Character(String name, boolean player) {
-        if (name != null || name != "") {
+        if (name != null && !name.equals("")) {
             this.name = name;
         } else {
             this.name = "New Player";

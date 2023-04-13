@@ -7,6 +7,8 @@ import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
 public class Inventory implements BaseInventory {
+
+    // nem kene ezeket inkabb default konstruktorral beallitani?
     private AbstractItem[] inventory = new AbstractItem[10];
     private final EquipItem equippedItem = new EquipItem();
 
