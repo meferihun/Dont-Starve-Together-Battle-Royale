@@ -31,16 +31,35 @@ public final class GameManager {
      */
     private final Random random = new Random();
     private List<Character> playersInTheGame;
+
+    // ez nem kell, ezt a Biro adja at parameterkent a loadLevelnek!
     private Level level;
+
+    // helyette a terkep mezoit kell eltarolnod! Fieldeket, ezt toltod be a loadLevel() soran
+    private Field[][] map;
+
     private boolean gameStarted;
+
+    // az aktualis idopillanat, tick() noveli, ha a jatek mar elkezdodott es meg nincs vege
+    private int currentTime;
+
+    private boolean isTutorialMode;
 
     /**
      * Az osztály privát konstruktora.
      */
     private GameManager() {
         this.playersInTheGame = new ArrayList<>();
+
+        // ezt a valtozot dobjuk ki
         this.level = null;
+
+        // helyette ezt inicializaljuk uresre
+        this.map = null;
+
         this.gameStarted = false;
+        this.currentTime = 0;
+        this.isTutorialMode = false;
     }
 
     /**
@@ -189,13 +208,15 @@ public final class GameManager {
      * @return Az adott nevű karakter objektum, vagy null, ha már a karakter meghalt vagy nem is létezett
      */
     public BaseCharacter getCharacter(String name) {
-        for (Character current : playersInTheGame) {
-            if (current != null) {
-                if (current.getName().equals(name)) {
-                    if (current.getHp() == 0) {
-                        return null;
+        if (name != null && !name.equals("")) {
+            for (Character current : playersInTheGame) {
+                if (current != null) {
+                    if (current.getName().equals(name)) {
+                        if (current.getHp() == 0) {
+                            return null;
+                        }
+                        return current;
                     }
-                    return current;
                 }
             }
         }
@@ -225,21 +246,20 @@ public final class GameManager {
      * @param level a fájlból betöltött pálya
      */
     public void loadLevel(Level level) {
-        if (this.level == null) {
-            this.level = level;
-            final int[][] map = new int[level.getWidth()][level.getHeight()];
+        // mielott barki csatlakozott! es meg nem volt betoltve
+        if (playersInTheGame.isEmpty() && !isLevelLoaded()) {
+            Field[][] loadedMap = new Field[level.getWidth()][level.getHeight()];
             for (int y = 0; y < level.getHeight(); y++) {
                 for (int x = 0; x < level.getWidth(); x++) {
-                    map[x][y] = level.getColor(x, y);
-                    System.out.print(map[x][y]);
+                    map[x][y] = new Field(level.getColor(x, y));
                 }
-                System.out.println();
             }
+            this.map = loadedMap;
         }
     }
 
     public boolean isLevelLoaded() {
-        return this.level != null;
+        return this.map != null;
     }
 
     /**
@@ -250,8 +270,16 @@ public final class GameManager {
      * @return az adott koordinátán lévő mező
      */
     public BaseField getField(int x, int y) {
-        if (x >= 0 && x < level.getWidth() && y >= 0 && y < level.getHeight()) {
-            return new Field(level.getColor(x, y));
+        // 2 dimenzios tomb; sorok szama: y, oszlopok szama: x (az elso sor elemeinek szama)
+        int height = map.length;
+        int width = map[0].length;
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            // az a baj, ez mindig new Field-et hoz letre, minden egyes lekerdezeskor
+            // ami azt jelenti, hogy kinullazza a mezon levo itemeket, tabortuzet, barmit
+            //return new Field(level.getColor(x, y));
+
+            // egesz egyszeruen csak visszaadjuk a Field-eket tarolo map-em egyik Field-jet
+            return map[x][y];
         }
         return null;
     }
@@ -267,17 +295,25 @@ public final class GameManager {
         if (!isLevelLoaded() || playersInTheGame.size() < 2) {
             return false;
         }
+        // ez nem jo, ez mindig false lesz az elejen, szerintem ez a resz egyaltalan nem kell
         if (gameStarted) {
             return false;
         }
+
+        // itt azt kell nezni, hogy pontosan 1 db emberi jatekos legyen!
+        int humanPlayers = 0;
         for (Character current : playersInTheGame) {
             if (current.isPlayer()) {
-                gameStarted = true;
-                return true;
+                humanPlayers++;
             }
         }
 
-        return false;
+        if (humanPlayers == 1) {
+            gameStarted = true;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -289,6 +325,16 @@ public final class GameManager {
      * @param action az emberi játékos által végrehajtani kívánt akció
      */
     public void tick(Action action) {
+        // - jatek elkezdodott? jateknak nincs vege?
+        //   - felhasznaloi input kezelese (action parametere ennek a fuggvenynek)
+        //   - tutorial modban vagyunk?
+        //     - nem -> minden eletben levo gepi jatekos, csatlakozasi sorrendben, futtat valamilyen Actiont
+        //     - igen -> minden eletben levo gepi jatekos, csatlakozasi sorrendben, ActionNone-t futtat
+        //   - minden karakterre: jollakottsag csokken 0.4-gyel; nem mehet 0 ala (ezt ellenorizzuk a setHungerben, szoval itt nem fontos)
+        //   - minden karakterre: jollakottsag==0? csokken az elete 5-tel
+        //   - ne felejtsd majd el: az inventoryban levo faklya es a palyan levo tabortuz itemek elettartamat csokkentjuk 1-gyel; ha 0 lesz, akkor megszunnek
+        //   - noveljuk az ido valtozot
+        //
         throw new NotImplementedException();
     }
 
@@ -300,7 +346,7 @@ public final class GameManager {
      * @return az aktuális időpillanat
      */
     public int time() {
-        throw new NotImplementedException();
+        return currentTime;
     }
 
     /**
@@ -310,6 +356,10 @@ public final class GameManager {
      * @return a győztes karakter vagy null
      */
     public BaseCharacter getWinner() {
+        // - isGameEnded() false? return null
+        //   - ha true: a last man standing a nyertes
+        //     (kiveve, ha nincs is semennyi jatekos, akkor null)
+
         throw new NotImplementedException();
     }
 
@@ -328,6 +378,13 @@ public final class GameManager {
      * @return igaz, ha a játék már befejeződött; hamis egyébként
      */
     public boolean isGameEnded() {
+        // A játék akkor ér véget, ha már csak 1 karakter marad életben vagy ha az emberi játékos meghal.
+        // Ezután már semmilyen cselekvés nem végezheto, az ido sem telik tovább.
+
+        // ellenorizni:
+        // - gameStarted?
+        //   - emberi jatekos el meg?
+        //     - egyetlen jatekos maradt eletben?
         throw new NotImplementedException();
     }
 
@@ -340,7 +397,9 @@ public final class GameManager {
      * @param tutorial igaz, amennyiben tutorial módot szeretnénk; hamis egyébként
      */
     public void setTutorial(boolean tutorial) {
-        throw new NotImplementedException();
+        if (!isGameStarted()) {
+            this.isTutorialMode = tutorial;
+        }
     }
 
 }
