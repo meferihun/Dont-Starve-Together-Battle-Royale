@@ -72,4 +72,16 @@ public class Position {
     public void setY(float y) {
         this.y = y;
     }
+
+    /**
+     * Az aktualis koordinata es a parameterkent adott masik koordinata kozotti tavolsag kiszamitasa.
+     *
+     * @param x2 a masik pont x koordinataja
+     * @param y2 a masik pont y koordinataja
+     *
+     * @return a ket pont kozotti tavolsag
+     */
+    public float getDistance(float x2, float y2) {
+        return (float) Math.sqrt((y2 - y) * (y2 - y) + (x2 - x) * (x2 - x));
+    }
 }

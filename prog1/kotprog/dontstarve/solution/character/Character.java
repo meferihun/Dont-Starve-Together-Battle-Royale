@@ -1,22 +1,24 @@
 package prog1.kotprog.dontstarve.solution.character;
 
 import prog1.kotprog.dontstarve.solution.character.actions.Action;
+import prog1.kotprog.dontstarve.solution.character.actions.ActionNone;
 import prog1.kotprog.dontstarve.solution.inventory.BaseInventory;
+import prog1.kotprog.dontstarve.solution.inventory.Inventory;
 import prog1.kotprog.dontstarve.solution.inventory.items.AbstractItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.utility.Position;
 
 public class Character implements BaseCharacter {
 
-    private Action lastAction;
-    private Action action;
     private String name;
+    private boolean player;
     private float healthPoint;
     private float hunger;
     private float speed;
+
     private Position currentPosition;
-    private boolean player;
-    private AbstractItem[] inventory = new AbstractItem[10];
+    private Action lastAction;
+    private Inventory inventory;
 
     public Character(String name, boolean player) {
         if (name != null && !name.equals("")) {
@@ -25,14 +27,12 @@ public class Character implements BaseCharacter {
             this.name = "New Player";
         }
         this.player = player;
-    }
-
-    public Action getAction() {
-        return action;
-    }
-
-    public void setAction(Action action) {
-        this.action = action;
+        this.healthPoint = 100;
+        this.hunger = 100;
+        this.speed = 1;
+        this.currentPosition = null;
+        this.lastAction = new ActionNone();
+        this.inventory = new Inventory();
     }
 
     /**
@@ -43,17 +43,19 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @param player beallitas, hogy ő jatekos-e
+     * A karakter mozgási sebességének lekérdezésére szolgáló metódus.
+     *
+     * @return a karakter mozgási sebessége
      */
-    public void setPlayer(boolean player) {
-        this.player = player;
+    @Override
+    public float getSpeed() {
+        return speed;
     }
 
     /**
-     * beallitasa a speednek
+     * A karakter mozgási sebességének beallitasara szolgáló metódus.
      */
     public void setSpeed() {
-        this.speed = 1;
         if (getHp() > 50 && getHp() <= 100) {
             this.speed *= 1;
         } else if (getHp() > 30 && getHp() <= 50) {
@@ -76,15 +78,19 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @return hogy mennyi a karakternek a sebessege
+     * A karakter jóllakottságának mértékének lekérdezésére szolgáló metódus.
+     *
+     * @return a karakter jóllakottsága
      */
     @Override
-    public float getSpeed() {
-        return speed;
+    public float getHunger() {
+        return hunger;
     }
 
     /**
-     * @param hunger es beallitja az ehseget a megfelelo ertekre
+     * A karakter jóllakottságának mértékének beallitasara szolgáló metódus.
+     *
+     * @param hunger a karakter jóllakottsága
      */
     public void setHunger(float hunger) {
         if (hunger >= 100) {
@@ -97,11 +103,13 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @return hogy mennyi az ehsege a karakternek
+     * A karakter életerejének lekérdezésére szolgáló metódus.
+     *
+     * @return a karakter életereje
      */
     @Override
-    public float getHunger() {
-        return hunger;
+    public float getHp() {
+        return healthPoint;
     }
 
     /**
@@ -117,41 +125,24 @@ public class Character implements BaseCharacter {
         }
     }
 
-    /**
-     * @return hogy mennyi a karakter elete
-     */
-    @Override
-    public float getHp() {
-        return healthPoint;
-    }
-
-    public void addItem(AbstractItem item) {
-        for (AbstractItem currentSlot : inventory) {
-            if (currentSlot != null) {
-                currentSlot = item;
-                currentSlot.setAmount(item.getAmount());
-                break;
-            }
-        }
-    }
+    public boolean isAlive() { return healthPoint > 0; }
 
     /**
-     * @return az inventory tartalma
+     * A karakter inventory-jának lekérdezésére szolgáló metódus.
+     * <br>
+     * A karakter inventory-ja végig ugyanaz marad, amelyet referencia szerint kell visszaadni.
+     *
+     * @return a karakter inventory-ja
      */
     @Override
     public BaseInventory getInventory() {
-        return null;
+        return inventory;
     }
 
     /**
-     * @param currentPosition beallitja a karakter aktualis poziciojat a kapott ertekre
-     */
-    public void setCurrentPosition(Position currentPosition) {
-        this.currentPosition = currentPosition;
-    }
-
-    /**
-     * @return a karakternek az aktualis pozicioja
+     * A játékos aktuális pozíciójának lekérdezésére szolgáló metódus.
+     *
+     * @return a játékos pozíciója
      */
     @Override
     public Position getCurrentPosition() {
@@ -159,22 +150,46 @@ public class Character implements BaseCharacter {
     }
 
     /**
-     * @param lastAction beallitja az ertekre, hogy mi volt az utolso cselekvese
+     * @param position beallitja a karakter aktualis poziciojat a kapott ertekre
      */
-    private void setLastAction(Action lastAction) {
-        this.lastAction = lastAction;
+    public void setCurrentPosition(Position position) {
+        if (position != null) {
+            this.currentPosition = position;
+        }
     }
 
     /**
-     * @return hogy mi volt az utolso cselekvese
+     * Az utolsó cselekvés lekérdezésére szolgáló metódus.
+     * <br>
+     * Egy létező Action-nek kell lennie, nem lehet null.
+     *
+     * @return az utolsó cselekvés
      */
     @Override
     public Action getLastAction() {
-        return lastAction;
+        if (lastAction != null) {
+            return lastAction;
+        } else {
+            return new ActionNone();
+        }
     }
 
     /**
-     * @return mi a karakter neve
+     * @param lastAction beallitja az ertekre, hogy mi volt az utolso cselekvese
+     */
+    public void setLastAction(Action lastAction) {
+        if (lastAction != null) {
+            this.lastAction = lastAction;
+        } else {
+            this.lastAction = new ActionNone();
+        }
+        // TODO execute-olni is kellene az action ez utan (meghivni az action logikat valahogy?)
+    }
+
+    /**
+     * A játékos nevének lekérdezésére szolgáló metódus.
+     *
+     * @return a játékos neve
      */
     @Override
     public String getName() {

@@ -81,103 +81,121 @@ public final class GameManager {
      * @return a karakter pozíciója a pályán, vagy (Integer.MAX_VALUE, Integer.MAX_VALUE) ha nem sikerült hozzáadni
      */
     public Position joinCharacter(String name, boolean player) {
-        for (Character current : playersInTheGame) {
-            if (current != null) {
-                if (current.getName().equals(name)) {
-                    return new Position(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        Position error = new Position(Integer.MAX_VALUE, Integer.MAX_VALUE);
+
+        // palya mar be lett toltve es a jatek meg nem kezdodott el
+        if (isLevelLoaded() && !isGameStarted()) {
+
+            // ha mar van csatlakozott emberi jatekos, masik nem lehet
+            if (isPlayerJoinedAlready && player) {
+                return error;
+            }
+
+            // ha mar van ilyen nevu jatekos, masik ugyanilyen nem lehet
+            for (Character current : playersInTheGame) {
+                if (current != null) {
+                    if (current.getName().equals(name)) {
+                        return error;
+                    }
                 }
             }
-        }
 
-        if (isPlayerJoinedAlready && player) {
-            return new Position(Integer.MAX_VALUE, Integer.MAX_VALUE);
-        }
-        if (!isPlayerJoinedAlready && player) {
-            isPlayerJoinedAlready = true;
-        }
+            // keresunk egy ures poziciot az uj beleponek, alapbol a vegtelenre allitjuk
+            Position newPlayerPosition = error;
 
-        AbstractItem[] items = new AbstractItem[]{new ItemRawCarrot(0), new ItemTwig(0), new ItemRawBerry(0), new ItemLog(0), new ItemStone(0)};
+            int height = map.length;
+            int width = map[0].length;
 
-        if (isLevelLoaded() && !isGameStarted()) {
-            Position newPlayerPosition = new Position(0, 0);
+            // eltaroljuk az osszes palyan levo jatekos koordinatajat
+            List<Position> enemyPositions = new ArrayList<>();
+            if (!playersInTheGame.isEmpty()) {
+                for (Character enemy : playersInTheGame) {
+                    if (enemy != null) {
+                        enemyPositions.add(enemy.getCurrentPosition().getNearestWholePosition());
+                    }
+                }
+            }
+
+            boolean foundSuitablePosition = false;
+            float distance = 50;
+
+            while (distance > 0 && !foundSuitablePosition) {
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        if (!map[y][x].isEmpty()) {
+                            // ha nem ures a mezo, oda semmikepp nem kerulhet, megyunk a kovetkezo (x;y)-ra
+                            continue;
+                        }
+
+                        boolean hasEnemyTooClose = false;
+                        for (Position p : enemyPositions) {
+                            if (p.getDistance(x, y) < distance) {
+                                // ha van akar csak egyetlen ellenfel, aki tul kozel van, maris nincs ertelme tovabb ellenorizni
+                                // a tobbi jatekost
+                                hasEnemyTooClose = true;
+                                break;
+                            }
+                        }
+                        if (hasEnemyTooClose) {
+                            // es ez esetben ezt az (x;y) koordinatat sem nezzuk tovabb
+                            continue;
+                        } else {
+                            // ha idaig nem leptunk ki, akkor ez a koordinata jo!
+                            newPlayerPosition.setX(x);
+                            newPlayerPosition.setY(y);
+                            foundSuitablePosition = true;
+                            break;
+                        }
+                    }
+                    if (foundSuitablePosition) {
+                        // nem kell tovabbi koordinatakat nezni
+                        break;
+                    }
+                }
+                // ha elfogytak a mezok es meg mindig nem helyeztuk el a jatekost, akkor csokkentjuk a tavolsagot
+                // es ujra probaljuk
+                distance -= 5;
+            }
+
+            // ha idaig nem sikerult meg helyet talalni neki, akkor ezt buktuk
+            if (!foundSuitablePosition) {
+                return error;
+            }
+
+            // vegul az uj beleponek 4 db random targyat sorsolunk az 5 alap fajtabol
+            AbstractItem[] items = new AbstractItem[]{
+                    new ItemRawCarrot(0),
+                    new ItemTwig(0),
+                    new ItemRawBerry(0),
+                    new ItemLog(0),
+                    new ItemStone(0)
+            };
+
             Character newCharacter = new Character(name, player);
             for (int i = 0; i < 4; i++) {
                 int randomInt = getRandom().nextInt(items.length);
                 AbstractItem newItem;
+
                 if (items[randomInt] != null) {
                     newItem = items[randomInt];
+                    items[randomInt] = null;
+                    newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
+                    newCharacter.getInventory().addItem(newItem);
                 } else {
                     i--;
-                    continue;
                 }
-                items[randomInt] = null;
-                newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
-                newCharacter.addItem(newItem);
             }
+
+            // ha idaig nem leptunk meg ki, akkor sikerult elhelyezni
+            newCharacter.setCurrentPosition(newPlayerPosition);
             playersInTheGame.add(newCharacter);
-            isPlayerJoinedAlready = true;
-            int height = map.length;
-            int width = map[0].length;
-            boolean[][] mapSlots = new boolean[width][height];
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    Field current = map[y][x];
-                    if (current.hasBerry() || current.hasCarrot() || current.hasFire() || current.hasTwig()) {
-                        if (current.hasTree() || current.hasStone() || current.isWalkable()) {
-                            mapSlots[x][y] = true;
-                        } else {
-                            mapSlots[x][y] = false;
-                        }
-                    } else {
-                        mapSlots[x][y] = false;
-                    }
-                }
-            }
-
-            boolean[][] mapAvailableSlots = mapSlots.clone();
-            float distance = 50;
-            int blockedFields = 0;
-            int index = 0;
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    if (mapAvailableSlots[y][x]) {
-                        mapAvailableSlots[y][x] = false;
-                        playersInTheGame.get(index).setCurrentPosition(new Position(x, y));
-                        if (index == playersInTheGame.size() - 1) {
-                            newPlayerPosition = playersInTheGame.get(index).getCurrentPosition();
-                        }
-                        index++;
-                        if (x + distance < width && y + distance < height) {
-                            for (int z = 0; z < distance; z++) {
-                                if (x + z < width && y + z < height) {
-                                    mapAvailableSlots[x + z][y + z] = false;
-                                    blockedFields++;
-                                }
-                            }
-                        } else if (x - distance >= 0 && y - distance >= 0) {
-                            for (int k = 0; k < distance; k++) {
-                                if (x - k >= 0 && y + k >= 0) {
-                                    mapAvailableSlots[x - k][y - k] = false;
-                                    blockedFields++;
-                                }
-                            }
-                        }
-                    }
-
-
-                    if (blockedFields == height * width) {
-                        distance -= 5;
-                        x = 0;
-                        y = 0;
-                        if (distance < 5) {
-                            break;
-                        }
-                    }
-                }
+            if (player) {
+                isPlayerJoinedAlready = true;
             }
             return newPlayerPosition;
         }
-        return new Position(Integer.MAX_VALUE, Integer.MAX_VALUE);
+
+        return error;
     }
 
     /**
@@ -191,7 +209,7 @@ public final class GameManager {
             for (Character current : playersInTheGame) {
                 if (current != null) {
                     if (current.getName().equals(name)) {
-                        if (current.getHp() == 0) {
+                        if (!current.isAlive()) {
                             return null;
                         }
                         return current;
@@ -210,7 +228,7 @@ public final class GameManager {
     public int remainingCharacters() {
         int aliveOnes = 0;
         for (Character current : playersInTheGame) {
-            if (current.getHp() > 0) {
+            if (current.isAlive()) {
                 aliveOnes++;
             }
         }
@@ -235,7 +253,6 @@ public final class GameManager {
             this.map = loadedMap;
         }
     }
-
 
     public boolean isLevelLoaded() {
         return this.map != null;
@@ -282,17 +299,38 @@ public final class GameManager {
      */
     public void tick(Action action) {
         if (isGameStarted() && !isGameEnded()) {
+
+            // felhasznaloi action eloszor
             for (Character current : playersInTheGame) {
-                if (!current.isPlayer() && current.getHp() > 0) {
-                    if (!isTutorialMode) {
-                        current.setAction(action);
-                    } else {
-                        current.setAction(new ActionNone());
-                    }
+                if (current.isPlayer() && current.isAlive()) {
+                    current.setLastAction(action);
                 }
-                current.setHunger(current.getHunger() - 0.4f);
-                if (current.getHunger() == 0) {
-                    current.setHp(current.getHp() - 5);
+            }
+
+            // majd vegigmegyunk mindenkin, az emberi jatekost is beleertve
+            for (Character current : playersInTheGame) {
+                if (current.isAlive()) {
+                    // gepi ellenfelek actionje
+                    if (!current.isPlayer()) {
+                        if (!isTutorialMode) {
+                            // TODO gepi logika, hogy milyen actionoket csinaljon
+                            current.setLastAction(new ActionNone());
+                        } else {
+                            current.setLastAction(new ActionNone());
+                        }
+                    }
+                    // TODO koron beluli ehseg erteket kulon kell tarolni es kezelni? vagy a setHunger()-t atirni, hogy engedjen 100 folottit
+                    /*
+                     * A jóllakottság egy körön belül mehet 100 fölé, de a kör végével már maximum 100 lehet.
+                     * Pl. ha a jóllakottságunk 81 és megeszünk egy nyers bogyót, akkor a jóllakottság ezzel 101 lesz,
+                     * viszont a kör végén ez csökken 0.4-del, tehát a kör végén 100 lesz (nem pedig 99.6).
+                     */
+                    current.setHunger(current.getHunger() - 0.4f);
+                    if (current.getHunger() == 0) {
+                        current.setHp(current.getHp() - 5);
+                    }
+                    // az eletero es jollakottsag alapjan valtozni fog a sebessege
+                    current.setSpeed();
                 }
             }
             currentTime++;
@@ -319,7 +357,7 @@ public final class GameManager {
     public BaseCharacter getWinner() {
         if (isGameEnded() && !playersInTheGame.isEmpty()) {
             for (Character current : playersInTheGame) {
-                if (current.getHp() > 0) {
+                if (current.isAlive()) {
                     return current;
                 }
             }
@@ -346,7 +384,7 @@ public final class GameManager {
         boolean isPlayerAlive = false;
         if (isGameStarted()) {
             for (Character current : playersInTheGame) {
-                if (current.getHp() > 0) {
+                if (current.isAlive()) {
                     aliveOnes++;
                     if (current.isPlayer()) {
                         isPlayerAlive = true;

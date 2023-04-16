@@ -8,6 +8,7 @@ import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Field implements BaseField {
     private final int color;
@@ -25,6 +26,10 @@ public class Field implements BaseField {
     @Override
     public boolean isWalkable() {
         return color != MapColors.WATER;
+    }
+
+    public boolean isEmpty() {
+        return (color == MapColors.EMPTY && !hasFire());
     }
 
     @Override
