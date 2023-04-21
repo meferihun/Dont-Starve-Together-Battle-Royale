@@ -6,8 +6,8 @@ import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
 public class Inventory implements BaseInventory {
-    private AbstractItem[] inventory;
     private final EquipItem equippedItem;
+    private final AbstractItem[] inventory;
 
     public Inventory() {
         this.inventory = new AbstractItem[10];
@@ -70,7 +70,8 @@ public class Inventory implements BaseInventory {
 
         for (int j = 0; j < inventory.length; j++) {
             if (!hasItem(j)) {
-                inventory[j] = item;
+                inventory[j] = new AbstractItem(item.getType(), item.getAmount()) {
+                };
                 int currentSlotMaxAmount = inventory[j].getType().getMaxStackAmount();
                 if (currentSlotMaxAmount >= remainingItems) {
                     inventory[j].setAmount(remainingItems);
@@ -83,7 +84,6 @@ public class Inventory implements BaseInventory {
         }
 
         item.setAmount(remainingItems);
-        System.err.println("A targybol ennyi maradt ki, amit nem adtunk hozza: " + remainingItems + " " + item.getType().name());
         return false;
     }
 
@@ -199,7 +199,8 @@ public class Inventory implements BaseInventory {
 
                 } else {
                     int left = inventory[index1].getType().getMaxStackAmount() - inventory[index1].getAmount();
-                    inventory[index1].setAmount(inventory[index1].getAmount() + inventory[index2].getAmount());
+                    int maxAmount = inventory[index1].getType().getMaxStackAmount();
+                    inventory[index1].setAmount(maxAmount);
                     inventory[index2].setAmount(inventory[index2].getAmount() - left);
                     return true;
                 }

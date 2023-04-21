@@ -78,7 +78,6 @@ public class Position {
      *
      * @param x2 a masik pont x koordinataja
      * @param y2 a masik pont y koordinataja
-     *
      * @return a ket pont kozotti tavolsag
      */
     public float getDistance(float x2, float y2) {

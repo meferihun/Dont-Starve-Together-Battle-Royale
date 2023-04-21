@@ -8,6 +8,6 @@ public class ItemTorch extends EquippableItem {
      * Konstruktor, amellyel a tárgy létrehozható.
      */
     public ItemTorch() {
-        super(ItemType.TORCH);
+        super(ItemType.TORCH, 100);
     }
 }

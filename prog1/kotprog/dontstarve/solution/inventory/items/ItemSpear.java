@@ -8,6 +8,6 @@ public class ItemSpear extends EquippableItem {
      * Konstruktor, amellyel a tárgy létrehozható.
      */
     public ItemSpear() {
-        super(ItemType.SPEAR);
+        super(ItemType.SPEAR, 100);
     }
 }

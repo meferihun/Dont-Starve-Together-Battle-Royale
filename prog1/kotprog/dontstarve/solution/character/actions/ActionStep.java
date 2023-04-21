@@ -23,9 +23,12 @@ public class ActionStep extends Action {
 
     /**
      * A direction gettere.
+     *
      * @return a mozgás iránya
      */
     public Direction getDirection() {
         return direction;
     }
+
+
 }

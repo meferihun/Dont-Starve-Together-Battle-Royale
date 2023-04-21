@@ -7,74 +7,72 @@ public enum ItemType {
     /**
      * fejsze.
      */
-    AXE("Fejsze", false, false, true,0, 0, 1, ""),
+    AXE(false, false, true, 0, 0, 1, ""),
 
     /**
      * csákány.
      */
-    PICKAXE("Csakany", false, false, true,0, 0, 1, ""),
+    PICKAXE(false, false, true, 0, 0, 1, ""),
 
     /**
      * lándzsa.
      */
-    SPEAR("Landzsa", false, false, true,0, 0, 1, ""),
+    SPEAR(false, false, true, 0, 0, 1, ""),
 
     /**
      * fáklya.
      */
-    TORCH("Faklya", false, false, true,0, 0, 1, ""),
+    TORCH(false, false, true, 0, 0, 1, ""),
 
     /**
      * farönk.
      */
-    LOG("Faronk", false, false, false,0, 0, 15, ""),
+    LOG(false, false, false, 0, 0, 15, ""),
 
     /**
      * kő.
      */
-    STONE("Ko", false, false, false,0, 0, 10, ""),
+    STONE(false, false, false, 0, 0, 10, ""),
 
     /**
      * gally.
      */
-    TWIG("Gally", false, false, false,0, 0, 20, ""),
+    TWIG(false, false, false, 0, 0, 20, ""),
 
     /**
      * nyers bogyó.
      */
-    RAW_BERRY("Nyers bogyo", true,true ,false, 20, -5, 10, "Fott bogyo"),
+    RAW_BERRY(true, true, false, 20, -5, 10, "Fott bogyo"),
 
     /**
      * nyers répa.
      */
-    RAW_CARROT("Nyers repa", true, true, false,12, 1, 10, "Fott repa"),
+    RAW_CARROT(true, true, false, 12, 1, 10, "Fott repa"),
 
     /**
      * főtt bogyó.
      */
-    COOKED_BERRY("Fott bogyo", true, false, false,10, 1, 10, ""),
+    COOKED_BERRY(true, false, false, 10, 1, 10, ""),
 
     /**
      * főtt répa.
      */
-    COOKED_CARROT("Fott repa", true, false, false,10, 3, 10, ""),
+    COOKED_CARROT(true, false, false, 10, 3, 10, ""),
 
     /**
      * tábortűz (inventory-ban nem tárolható!).
      */
-    FIRE("Tabortuz", false, false, false,0, 0, 0, "");
+    FIRE(false, false, false, 0, 0, 0, "");
 
-    private String name;
-    private boolean isEdible;
-    private boolean isCookable;
-    private boolean isEquippable;
-    private int hungerModifier;
-    private int healthModifier;
-    private int maxStackAmount;
-    private String cookedVersion;
+    private final boolean isEdible;
+    private final boolean isCookable;
+    private final boolean isEquippable;
+    private final int hungerModifier;
+    private final int healthModifier;
+    private final int maxStackAmount;
+    private final String cookedVersion;
 
-    ItemType(String name, boolean isEdible, boolean isCookable, boolean isEquippable,int hungerModifier, int healthModifier, int maxStackAmount, String cookedVersion) {
-        this.name = name;
+    ItemType(boolean isEdible, boolean isCookable, boolean isEquippable, int hungerModifier, int healthModifier, int maxStackAmount, String cookedVersion) {
         this.isEdible = isEdible;
         this.isCookable = isCookable;
         this.isEquippable = isEquippable;
@@ -84,9 +82,6 @@ public enum ItemType {
         this.cookedVersion = cookedVersion;
     }
 
-    public String getName() {
-        return name;
-    }
 
     public boolean isEdible() {
         return this.isEdible;
@@ -96,19 +91,19 @@ public enum ItemType {
         return (this.maxStackAmount > 1);
     }
 
-    public boolean isCookable(){
+    public boolean isCookable() {
         return this.isCookable;
     }
 
-    public int getHealthModifier(){
+    public int getHealthModifier() {
         return this.healthModifier;
     }
 
-    public int getHungerModifier(){
+    public int getHungerModifier() {
         return this.hungerModifier;
     }
 
-    public int getMaxStackAmount(){
+    public int getMaxStackAmount() {
         return this.maxStackAmount;
     }
 

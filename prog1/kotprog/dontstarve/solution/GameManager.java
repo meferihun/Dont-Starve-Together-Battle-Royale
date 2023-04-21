@@ -4,11 +4,12 @@ import prog1.kotprog.dontstarve.solution.character.BaseCharacter;
 import prog1.kotprog.dontstarve.solution.character.Character;
 import prog1.kotprog.dontstarve.solution.character.actions.Action;
 import prog1.kotprog.dontstarve.solution.character.actions.ActionNone;
-import prog1.kotprog.dontstarve.solution.exceptions.NotImplementedException;
+import prog1.kotprog.dontstarve.solution.character.actions.ActionStep;
 import prog1.kotprog.dontstarve.solution.inventory.items.*;
 import prog1.kotprog.dontstarve.solution.level.BaseField;
 import prog1.kotprog.dontstarve.solution.level.Field;
 import prog1.kotprog.dontstarve.solution.level.Level;
+import prog1.kotprog.dontstarve.solution.utility.Direction;
 import prog1.kotprog.dontstarve.solution.utility.Position;
 
 import java.util.ArrayList;
@@ -164,26 +165,19 @@ public final class GameManager {
 
             // vegul az uj beleponek 4 db random targyat sorsolunk az 5 alap fajtabol
             AbstractItem[] items = new AbstractItem[]{
-                    new ItemRawCarrot(0),
-                    new ItemTwig(0),
-                    new ItemRawBerry(0),
-                    new ItemLog(0),
-                    new ItemStone(0)
+                    new ItemRawCarrot(1),
+                    new ItemTwig(1),
+                    new ItemRawBerry(1),
+                    new ItemLog(1),
+                    new ItemStone(1)
             };
+            int alreadyAddedAmount = 0;
 
             Character newCharacter = new Character(name, player);
-            for (int i = 0; i < 4; i++) {
+            while (alreadyAddedAmount < 4) {
                 int randomInt = getRandom().nextInt(items.length);
-                AbstractItem newItem;
-
-                if (items[randomInt] != null) {
-                    newItem = items[randomInt];
-                    items[randomInt] = null;
-                    newItem.setAmount(getRandom().nextInt(newItem.getType().getMaxStackAmount() - 1) + 1);
-                    newCharacter.getInventory().addItem(newItem);
-                } else {
-                    i--;
-                }
+                newCharacter.getInventory().addItem(items[randomInt]);
+                alreadyAddedAmount++;
             }
 
             // ha idaig nem leptunk meg ki, akkor sikerult elhelyezni
@@ -303,6 +297,9 @@ public final class GameManager {
             // felhasznaloi action eloszor
             for (Character current : playersInTheGame) {
                 if (current.isPlayer() && current.isAlive()) {
+                    switch (action.getType()) {
+                        case STEP -> step(current, ((ActionStep) action).getDirection());
+                    }
                     current.setLastAction(action);
                 }
             }
@@ -413,4 +410,34 @@ public final class GameManager {
         }
     }
 
+    public Position step(Character character, Direction direction) {
+        Position position = character.getCurrentPosition();
+        float x = position.getX();
+        float y = position.getY();
+        int width = map[0].length;
+        int height = map.length;
+        float speed = character.getSpeed();
+        if (direction == Direction.LEFT) {
+            if (x - speed >= 0 && map[(int) y][(int) (x - speed)].isWalkable()) {
+                position.setX(x - speed);
+                return position;
+            }
+        } else if (direction == Direction.RIGHT) {
+            if (x + speed < width && map[(int) y][(int) (x + speed)].isWalkable()) {
+                position.setX(x + speed);
+                return position;
+            }
+        } else if (direction == Direction.UP) {
+            if (y - speed >= 0 && map[(int) (y - speed)][(int) x].isWalkable()) {
+                position.setY(y - speed);
+                return position;
+            }
+        } else if (direction == Direction.DOWN) {
+            if (y + speed < height && map[(int) (y + speed)][(int) x].isWalkable()) {
+                position.setY(y + speed);
+                return position;
+            }
+        }
+        return position;
+    }
 }

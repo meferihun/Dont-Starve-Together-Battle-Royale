@@ -56,6 +56,7 @@ public class Character implements BaseCharacter {
      * A karakter mozgási sebességének beallitasara szolgáló metódus.
      */
     public void setSpeed() {
+        this.speed = 1;
         if (getHp() > 50 && getHp() <= 100) {
             this.speed *= 1;
         } else if (getHp() > 30 && getHp() <= 50) {
@@ -125,7 +126,9 @@ public class Character implements BaseCharacter {
         }
     }
 
-    public boolean isAlive() { return healthPoint > 0; }
+    public boolean isAlive() {
+        return healthPoint > 0;
+    }
 
     /**
      * A karakter inventory-jának lekérdezésére szolgáló metódus.

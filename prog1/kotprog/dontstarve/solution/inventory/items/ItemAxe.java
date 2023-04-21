@@ -8,6 +8,6 @@ public class ItemAxe extends EquippableItem {
      * Konstruktor, amellyel a tárgy létrehozható.
      */
     public ItemAxe() {
-        super(ItemType.AXE);
+        super(ItemType.AXE, 100);
     }
 }

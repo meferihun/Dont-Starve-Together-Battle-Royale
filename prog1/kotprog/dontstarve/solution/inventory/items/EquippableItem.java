@@ -1,18 +1,25 @@
 package prog1.kotprog.dontstarve.solution.inventory.items;
 
-import prog1.kotprog.dontstarve.solution.exceptions.NotImplementedException;
-
 /**
  * Felvehető / kézbe vehető item leírására szolgáló osztály.
  */
 public abstract class EquippableItem extends AbstractItem {
+    private float percentage;
+
     /**
      * Konstruktor, amellyel a tárgy létrehozható.
      *
      * @param type az item típusa
      */
-    public EquippableItem(ItemType type) {
+    public EquippableItem(ItemType type, float percentage) {
         super(type, 1);
+        if (percentage >= 100) {
+            this.percentage = 100;
+        } else if (percentage > 0 && percentage < 100) {
+            this.percentage = percentage;
+        } else {
+            this.percentage = 0;
+        }
     }
 
     /**
@@ -21,6 +28,6 @@ public abstract class EquippableItem extends AbstractItem {
      * @return a tárgy használatlansága, %-ban (100%: tökéletes állapot)
      */
     public float percentage() {
-        throw new NotImplementedException();
+        return percentage;
     }
 }

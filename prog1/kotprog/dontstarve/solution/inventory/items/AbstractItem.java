@@ -53,8 +53,6 @@ public abstract class AbstractItem {
     public void setAmount(int amount) {
         if (amount <= 0) {
             this.amount = 0;
-        } else if (amount > type.getMaxStackAmount()) {
-            this.amount = type.getMaxStackAmount();
         } else {
             this.amount = amount;
         }

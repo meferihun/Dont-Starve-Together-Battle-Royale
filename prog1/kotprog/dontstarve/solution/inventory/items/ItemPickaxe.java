@@ -8,6 +8,6 @@ public class ItemPickaxe extends EquippableItem {
      * Konstruktor, amellyel a tárgy létrehozható.
      */
     public ItemPickaxe() {
-        super(ItemType.PICKAXE);
+        super(ItemType.PICKAXE, 100);
     }
 }
