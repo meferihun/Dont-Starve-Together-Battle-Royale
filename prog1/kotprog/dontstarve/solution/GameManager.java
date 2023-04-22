@@ -29,7 +29,7 @@ public final class GameManager {
      * Random objektum, amit a játék során használni lehet.
      */
     private final Random random = new Random();
-    private List<Character> playersInTheGame;
+    private final List<Character> playersInTheGame;
     private Field[][] map;
     private boolean gameStarted;
     private int currentTime;
@@ -164,13 +164,7 @@ public final class GameManager {
             }
 
             // vegul az uj beleponek 4 db random targyat sorsolunk az 5 alap fajtabol
-            AbstractItem[] items = new AbstractItem[]{
-                    new ItemRawCarrot(1),
-                    new ItemTwig(1),
-                    new ItemRawBerry(1),
-                    new ItemLog(1),
-                    new ItemStone(1)
-            };
+            AbstractItem[] items = new AbstractItem[]{new ItemRawCarrot(1), new ItemTwig(1), new ItemRawBerry(1), new ItemLog(1), new ItemStone(1)};
             int alreadyAddedAmount = 0;
 
             Character newCharacter = new Character(name, player);
@@ -388,10 +382,7 @@ public final class GameManager {
                     }
                 }
             }
-            if (aliveOnes == 1 && isPlayerAlive) {
-                return true;
-            }
-            return false;
+            return aliveOnes == 1 && isPlayerAlive;
         }
         return false;
     }
@@ -417,27 +408,44 @@ public final class GameManager {
         int width = map[0].length;
         int height = map.length;
         float speed = character.getSpeed();
-        if (direction == Direction.LEFT) {
-            if (x - speed >= 0 && map[(int) y][(int) (x - speed)].isWalkable()) {
-                position.setX(x - speed);
-                return position;
+
+        if (!map[(int) y][(int) x].isWalkable()) {
+            return position;
+        }
+
+        switch (direction) {
+
+            case LEFT -> {
+                if (x - speed >= 0 && map[Math.round(y)][Math.round(x - speed)].isWalkable()) {
+                    position.setX(Math.round(x - speed));
+                    return position;
+                }
             }
-        } else if (direction == Direction.RIGHT) {
-            if (x + speed < width && map[(int) y][(int) (x + speed)].isWalkable()) {
-                position.setX(x + speed);
-                return position;
+
+            case RIGHT -> {
+                if (x + speed < width && map[Math.round(y)][Math.round(x + speed)].isWalkable()) {
+                    position.setX(Math.round(x + speed));
+                    return position;
+                }
             }
-        } else if (direction == Direction.UP) {
-            if (y - speed >= 0 && map[(int) (y - speed)][(int) x].isWalkable()) {
-                position.setY(y - speed);
-                return position;
+
+            case UP -> {
+                if (y - speed >= 0 && map[Math.round(y - speed)][Math.round(x)].isWalkable()) {
+                    position.setY(Math.round(y - speed));
+                    return position;
+                }
             }
-        } else if (direction == Direction.DOWN) {
-            if (y + speed < height && map[(int) (y + speed)][(int) x].isWalkable()) {
-                position.setY(y + speed);
-                return position;
+
+            case DOWN -> {
+                if (y + speed < height && map[Math.round(y + speed)][Math.round(x)].isWalkable()) {
+                    position.setY(Math.round(y + speed));
+                    return position;
+                }
             }
         }
+
         return position;
     }
+
+
 }
