@@ -426,25 +426,18 @@ public final class GameManager {
         return position;
     }
 
-    public AbstractItem collect(Character character, Position position) {
-        Field field;
-        if (position.getY() < map.length && position.getY() >= 0 && position.getX() < map[0].length && position.getX() >= 0) {
-            field = map[(int) position.getNearestWholePosition().getX()][(int) position.getNearestWholePosition().getY()];
-        } else {
-            return null;
-        }
+    public void collect(Character character, Position position) {
+        Field field = map[(int) position.getNearestWholePosition().getX()][(int) position.getNearestWholePosition().getY()];
+        
         if (field.hasBerry()) {
             character.getInventory().addItem(new ItemRawBerry(1));
-            return new ItemRawBerry(1);
         } else if (field.hasCarrot()) {
             character.getInventory().addItem(new ItemRawCarrot(1));
-            return new ItemRawCarrot(1);
         } else if (field.hasTwig()) {
             field.setExtractionProgress(field.getExtractionProgress() + 0.5f);
             if (field.getExtractionProgress() == 1) {
                 character.getInventory().addItem(new ItemTwig(1));
                 field.setExtractionProgress(0);
-                return new ItemTwig(1);
             }
         } else if (field.hasStone()) {
             if (field.getExtractionProgress() < 1) {
@@ -459,7 +452,6 @@ public final class GameManager {
                             field.placeItem(new ItemStone(3));
                             field.setColor(0xFF32C832);
                             field.setExtractionProgress(0);
-                            return new ItemStone(3);
                         }
                     }
                 }
@@ -477,7 +469,6 @@ public final class GameManager {
                             field.placeItem(new ItemLog(2));
                             field.setColor(0xFF32C832);
                             field.setExtractionProgress(0);
-                            return new ItemLog(2);
                         }
                     }
                 }
