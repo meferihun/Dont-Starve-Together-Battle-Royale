@@ -474,7 +474,6 @@ public final class GameManager {
                 }
             }
         }
-        return null;
     }
 
     public void eat(Character character, int index) {
