@@ -7,62 +7,62 @@ public enum ItemType {
     /**
      * fejsze.
      */
-    AXE(false, false, true, 0, 0, 1, ""),
+    AXE(false, false, true, 0, 0, 1),
 
     /**
      * csákány.
      */
-    PICKAXE(false, false, true, 0, 0, 1, ""),
+    PICKAXE(false, false, true, 0, 0, 1),
 
     /**
      * lándzsa.
      */
-    SPEAR(false, false, true, 0, 0, 1, ""),
+    SPEAR(false, false, true, 0, 0, 1),
 
     /**
      * fáklya.
      */
-    TORCH(false, false, true, 0, 0, 1, ""),
+    TORCH(false, false, true, 0, 0, 1),
 
     /**
      * farönk.
      */
-    LOG(false, false, false, 0, 0, 15, ""),
+    LOG(false, false, false, 0, 0, 15),
 
     /**
      * kő.
      */
-    STONE(false, false, false, 0, 0, 10, ""),
+    STONE(false, false, false, 0, 0, 10),
 
     /**
      * gally.
      */
-    TWIG(false, false, false, 0, 0, 20, ""),
+    TWIG(false, false, false, 0, 0, 20),
 
     /**
      * nyers bogyó.
      */
-    RAW_BERRY(true, true, false, 20, -5, 10, "Fott bogyo"),
+    RAW_BERRY(true, true, false, 20, -5, 10),
 
     /**
      * nyers répa.
      */
-    RAW_CARROT(true, true, false, 12, 1, 10, "Fott repa"),
+    RAW_CARROT(true, true, false, 12, 1, 10),
 
     /**
      * főtt bogyó.
      */
-    COOKED_BERRY(true, false, false, 10, 1, 10, ""),
+    COOKED_BERRY(true, false, false, 10, 1, 10),
 
     /**
      * főtt répa.
      */
-    COOKED_CARROT(true, false, false, 10, 3, 10, ""),
+    COOKED_CARROT(true, false, false, 10, 3, 10),
 
     /**
      * tábortűz (inventory-ban nem tárolható!).
      */
-    FIRE(false, false, false, 0, 0, 0, "");
+    FIRE(false, false, false, 0, 0, 0);
 
     private final boolean isEdible;
     private final boolean isCookable;
@@ -70,16 +70,14 @@ public enum ItemType {
     private final int hungerModifier;
     private final int healthModifier;
     private final int maxStackAmount;
-    private final String cookedVersion;
 
-    ItemType(boolean isEdible, boolean isCookable, boolean isEquippable, int hungerModifier, int healthModifier, int maxStackAmount, String cookedVersion) {
+    ItemType(boolean isEdible, boolean isCookable, boolean isEquippable, int hungerModifier, int healthModifier, int maxStackAmount) {
         this.isEdible = isEdible;
         this.isCookable = isCookable;
         this.isEquippable = isEquippable;
         this.hungerModifier = hungerModifier;
         this.healthModifier = healthModifier;
         this.maxStackAmount = maxStackAmount;
-        this.cookedVersion = cookedVersion;
     }
 
 
@@ -111,7 +109,4 @@ public enum ItemType {
         return isEquippable;
     }
 
-    public String getCookedVersion() {
-        return cookedVersion;
-    }
 }

@@ -2,9 +2,7 @@ package prog1.kotprog.dontstarve.solution;
 
 import prog1.kotprog.dontstarve.solution.character.BaseCharacter;
 import prog1.kotprog.dontstarve.solution.character.Character;
-import prog1.kotprog.dontstarve.solution.character.actions.Action;
-import prog1.kotprog.dontstarve.solution.character.actions.ActionNone;
-import prog1.kotprog.dontstarve.solution.character.actions.ActionStep;
+import prog1.kotprog.dontstarve.solution.character.actions.*;
 import prog1.kotprog.dontstarve.solution.inventory.items.*;
 import prog1.kotprog.dontstarve.solution.level.BaseField;
 import prog1.kotprog.dontstarve.solution.level.Field;
@@ -293,6 +291,10 @@ public final class GameManager {
                 if (current.isPlayer() && current.isAlive()) {
                     switch (action.getType()) {
                         case STEP -> step(current, ((ActionStep) action).getDirection());
+                        case COLLECT_ITEM -> collect(current, current.getCurrentPosition());
+                        case EAT -> eat(current, ((ActionEat) action).getIndex());
+                        case COOK -> cook(current, ((ActionCook) action).getIndex());
+                        case CRAFT -> craft(current, CraftableItem.AXE);
                     }
                     current.setLastAction(action);
                 }
@@ -409,43 +411,154 @@ public final class GameManager {
         int height = map.length;
         float speed = character.getSpeed();
 
-        if (!map[(int) y][(int) x].isWalkable()) {
-            return position;
+        switch (direction) {
+            case LEFT -> x -= speed;
+            case RIGHT -> x += speed;
+            case UP -> y -= speed;
+            case DOWN -> y += speed;
         }
 
-        switch (direction) {
-
-            case LEFT -> {
-                if (x - speed >= 0 && map[Math.round(y)][Math.round(x - speed)].isWalkable()) {
-                    position.setX(Math.round(x - speed));
-                    return position;
-                }
-            }
-
-            case RIGHT -> {
-                if (x + speed < width && map[Math.round(y)][Math.round(x + speed)].isWalkable()) {
-                    position.setX(Math.round(x + speed));
-                    return position;
-                }
-            }
-
-            case UP -> {
-                if (y - speed >= 0 && map[Math.round(y - speed)][Math.round(x)].isWalkable()) {
-                    position.setY(Math.round(y - speed));
-                    return position;
-                }
-            }
-
-            case DOWN -> {
-                if (y + speed < height && map[Math.round(y + speed)][Math.round(x)].isWalkable()) {
-                    position.setY(Math.round(y + speed));
-                    return position;
-                }
-            }
+        if (x >= 0 && x < width && y >= 0 && y < height && map[Math.round(y)][Math.round(x)].isWalkable()) {
+            position.setX(x);
+            position.setY(y);
         }
 
         return position;
     }
 
+    public AbstractItem collect(Character character, Position position) {
+        Field field;
+        if (position.getY() < map.length && position.getY() >= 0 && position.getX() < map[0].length && position.getX() >= 0) {
+            field = map[(int) position.getNearestWholePosition().getX()][(int) position.getNearestWholePosition().getY()];
+        } else {
+            return null;
+        }
+        if (field.hasBerry()) {
+            character.getInventory().addItem(new ItemRawBerry(1));
+            return new ItemRawBerry(1);
+        } else if (field.hasCarrot()) {
+            character.getInventory().addItem(new ItemRawCarrot(1));
+            return new ItemRawCarrot(1);
+        } else if (field.hasTwig()) {
+            field.setExtractionProgress(field.getExtractionProgress() + 0.5f);
+            if (field.getExtractionProgress() == 1) {
+                character.getInventory().addItem(new ItemTwig(1));
+                field.setExtractionProgress(0);
+                return new ItemTwig(1);
+            }
+        } else if (field.hasStone()) {
+            if (field.getExtractionProgress() < 1) {
+                if (character.getInventory().equippedItem() != null && character.getInventory().equippedItem().getType().equals(ItemType.PICKAXE)) {
+                    if (character.getInventory().equippedItem().percentage() > 0) {
+                        field.setExtractionProgress(field.getExtractionProgress() + 0.25f);
+                        character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 3.34f);
+                        if (character.getInventory().equippedItem().percentage() == 0) {
+                            character.getInventory().itemBreak();
+                        }
+                        if (field.getExtractionProgress() == 1) {
+                            field.placeItem(new ItemStone(3));
+                            field.setColor(0xFF32C832);
+                            field.setExtractionProgress(0);
+                            return new ItemStone(3);
+                        }
+                    }
+                }
+            }
+        } else if (field.hasTree()) {
+            if (field.getExtractionProgress() < 1) {
+                if (character.getInventory().equippedItem() != null && character.getInventory().equippedItem().getType().equals(ItemType.AXE)) {
+                    if (character.getInventory().equippedItem().percentage() > 0) {
+                        field.setExtractionProgress(field.getExtractionProgress() + 0.2f);
+                        character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 2.5f);
+                        if (character.getInventory().equippedItem().percentage() == 0) {
+                            character.getInventory().itemBreak();
+                        }
+                        if (field.getExtractionProgress() == 1) {
+                            field.placeItem(new ItemLog(2));
+                            field.setColor(0xFF32C832);
+                            field.setExtractionProgress(0);
+                            return new ItemLog(2);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public void eat(Character character, int index) {
+        ItemType itemToEat = character.getInventory().eatItem(index);
+        switch (itemToEat) {
+            case RAW_BERRY, COOKED_CARROT, RAW_CARROT, COOKED_BERRY -> {
+                character.setHunger(character.getHunger() + itemToEat.getHungerModifier());
+                character.setHp(character.getHp() + itemToEat.getHealthModifier());
+            }
+        }
+    }
+
+    public void cook(Character character, int index) {
+        float x = character.getCurrentPosition().getNearestWholePosition().getX();
+        float y = character.getCurrentPosition().getNearestWholePosition().getY();
+        if (map[(int) x][(int) y].hasFire()) {
+            character.getInventory().cookItem(index);
+        }
+
+    }
+
+    public void craft(Character character, CraftableItem craftableItem) {
+        float x = character.getCurrentPosition().getNearestWholePosition().getX();
+        float y = character.getCurrentPosition().getNearestWholePosition().getY();
+
+        switch (craftableItem) {
+
+            case AXE -> {
+                if (character.getInventory().removeItem(ItemType.TWIG, 3)) {
+                    if (character.getInventory().emptySlots() > 0) {
+                        character.getInventory().addItem(new ItemAxe());
+                    } else {
+                        map[(int) x][(int) y].placeItem(new ItemAxe());
+                    }
+                }
+            }
+
+            case PICKAXE -> {
+                if (character.getInventory().removeItem(ItemType.TWIG, 2) && character.getInventory().removeItem(ItemType.LOG, 2)) {
+                    if (character.getInventory().emptySlots() > 0) {
+                        character.getInventory().addItem(new ItemPickaxe());
+                    } else {
+                        map[(int) x][(int) y].placeItem(new ItemPickaxe());
+                    }
+                }
+            }
+
+            case SPEAR -> {
+                if (character.getInventory().removeItem(ItemType.LOG, 2) && character.getInventory().removeItem(ItemType.STONE, 2)) {
+                    if (character.getInventory().emptySlots() > 0) {
+                        character.getInventory().addItem(new ItemSpear());
+                    } else {
+                        map[(int) x][(int) y].placeItem(new ItemSpear());
+                    }
+                }
+            }
+
+            case TORCH -> {
+                if (character.getInventory().removeItem(ItemType.TWIG, 3) && character.getInventory().removeItem(ItemType.LOG, 1)) {
+                    if (character.getInventory().emptySlots() > 0) {
+                        character.getInventory().addItem(new ItemTorch());
+                    } else {
+                        map[(int) x][(int) y].placeItem(new ItemTorch());
+                    }
+                }
+            }
+
+            case FIRE -> {
+                if (character.getInventory().removeItem(ItemType.TWIG, 2) && character.getInventory().removeItem(ItemType.LOG, 2)) {
+                    if (character.getInventory().removeItem(ItemType.STONE, 4)) {
+                        map[(int) x][(int) y].placeItem(new ItemFire());
+                    }
+                }
+            }
+        }
+    }
 
 }

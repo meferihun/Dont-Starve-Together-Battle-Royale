@@ -5,6 +5,8 @@ import prog1.kotprog.dontstarve.solution.inventory.items.EquipItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
+import java.security.PublicKey;
+
 public class Inventory implements BaseInventory {
     private final EquipItem equippedItem;
     private final AbstractItem[] inventory;
@@ -195,15 +197,14 @@ public class Inventory implements BaseInventory {
                 if (inventory[index1].getType().getMaxStackAmount() >= (inventory[index1].getAmount() + inventory[index2].getAmount())) {
                     inventory[index1].setAmount(inventory[index1].getAmount() + inventory[index2].getAmount());
                     inventory[index2] = null;
-                    return true;
 
                 } else {
                     int left = inventory[index1].getType().getMaxStackAmount() - inventory[index1].getAmount();
                     int maxAmount = inventory[index1].getType().getMaxStackAmount();
                     inventory[index1].setAmount(maxAmount);
                     inventory[index2].setAmount(inventory[index2].getAmount() - left);
-                    return true;
                 }
+                return true;
             }
         }
         return false;
@@ -219,13 +220,12 @@ public class Inventory implements BaseInventory {
             if (equippedItem.getEquippedItem() == null) {
                 equippedItem.setEquippedItem((EquippableItem) inventory[index]);
                 inventory[index] = null;
-                return true;
             } else {
                 AbstractItem temp = inventory[index];
                 inventory[index] = equippedItem.getEquippedItem();
                 equippedItem.setEquippedItem((EquippableItem) temp);
-                return true;
             }
+            return true;
         }
         return false;
     }
@@ -326,5 +326,13 @@ public class Inventory implements BaseInventory {
         }
 
         return null;
+    }
+
+    public void itemBreak() {
+        if (equippedItem.getEquippedItem() != null) {
+            if (equippedItem.getEquippedItem().percentage() == 0) {
+                equippedItem.setEquippedItem(null);
+            }
+        }
     }
 }

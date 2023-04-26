@@ -2,6 +2,8 @@ package prog1.kotprog.dontstarve.solution;
 
 import prog1.kotprog.dontstarve.solution.character.BaseCharacter;
 import prog1.kotprog.dontstarve.solution.character.Character;
+import prog1.kotprog.dontstarve.solution.inventory.Inventory;
+import prog1.kotprog.dontstarve.solution.inventory.items.ItemRawCarrot;
 import prog1.kotprog.dontstarve.solution.level.Level;
 import prog1.kotprog.dontstarve.solution.utility.Direction;
 import prog1.kotprog.dontstarve.solution.utility.Position;
@@ -12,6 +14,7 @@ import java.net.URL;
 public class Main {
     public static void main(String[] args) {
         GameManager game = GameManager.getInstance();
+        Inventory inventory = new Inventory();
         /*
         Position p1 = game.joinCharacter("Elso", true);
         System.out.printf("palya betoltes elott: %.2f %.2f\n", p1.getX(), p1.getY());
@@ -43,11 +46,10 @@ public class Main {
         URL filename = Main.class.getResource("level00.png");
         Level palya = new Level(filename.getPath());
         game.loadLevel(palya);
+        inventory.addItem(new ItemRawCarrot(2));
         Position p2 = game.joinCharacter("Masodik", false);
         BaseCharacter player = game.getCharacter("Masodik");
-        System.out.println("Position step elott: " + player.getCurrentPosition().getX() + " " + player.getCurrentPosition().getY());
 
-        game.step((Character) player, Direction.RIGHT);
-        System.out.println("Position step utan: " + player.getCurrentPosition().getX() + " " + player.getCurrentPosition().getY());
+
     }
 }

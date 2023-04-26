@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Field implements BaseField {
-    private final int color;
+    private int color;
 
     private float extractionProgress;
 
@@ -62,6 +62,10 @@ public class Field implements BaseField {
         return items.contains(ItemType.FIRE);
     }
 
+    public void setColor(int color) {
+        this.color = color;
+    }
+
     @Override
     public AbstractItem[] items() {
         // a tavon nem lehet semmilyen targy
@@ -78,7 +82,7 @@ public class Field implements BaseField {
      *
      * @param item amit belerakunk
      */
-    public void addItem(AbstractItem item) {
+    public void placeItem(AbstractItem item) {
         if (item != null) {
             items.add(item);
         }

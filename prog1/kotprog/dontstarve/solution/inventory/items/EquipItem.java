@@ -16,4 +16,6 @@ public class EquipItem {
     public void setEquippedItem(EquippableItem equippedItem) {
         this.equippedItem = equippedItem;
     }
+
+
 }
