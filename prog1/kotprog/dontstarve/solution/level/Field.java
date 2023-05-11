@@ -1,14 +1,13 @@
 package prog1.kotprog.dontstarve.solution.level;
 
-import prog1.kotprog.dontstarve.solution.character.Character;
-import prog1.kotprog.dontstarve.solution.exceptions.NotImplementedException;
 import prog1.kotprog.dontstarve.solution.inventory.items.AbstractItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemFire;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class Field implements BaseField {
     private int color;
@@ -16,6 +15,7 @@ public class Field implements BaseField {
     private float extractionProgress;
 
     private List<AbstractItem> items;
+
 
     public Field(int color) {
         this.color = color;
@@ -59,7 +59,14 @@ public class Field implements BaseField {
 
     @Override
     public boolean hasFire() {
-        return items.contains(ItemType.FIRE);
+        if (!items.isEmpty()) {
+            for (AbstractItem item : items) {
+                if (item.getType().equals(ItemType.FIRE)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void setColor(int color) {
@@ -73,7 +80,7 @@ public class Field implements BaseField {
             AbstractItem[] itemArray = new AbstractItem[items.size()];
             return items.toArray(itemArray);
         } else {
-            return null;
+            return new AbstractItem[0];
         }
     }
 
@@ -84,7 +91,16 @@ public class Field implements BaseField {
      */
     public void placeItem(AbstractItem item) {
         if (item != null) {
-            items.add(item);
+            if (item.getType().equals(ItemType.FIRE) && !hasFire()) {
+                items.add(item);
+            } else if (hasFire() && !item.getType().equals(ItemType.FIRE)) {
+
+                AbstractItem temp = items.get(items.size() - 1);
+                items.set(items.size() - 1, item);
+                items.add(temp);
+            } else if (!item.getType().equals(ItemType.FIRE) && !hasFire()) {
+                items.add(item);
+            }
         }
     }
 
@@ -93,13 +109,34 @@ public class Field implements BaseField {
      *
      * @return az item
      */
-    public AbstractItem getItem() {
+    public boolean pickUpItem() {
         if (!items.isEmpty()) {
-            AbstractItem tempItem = items.get(0);
-            items.remove(0);
-            return tempItem;
+            if (!items.get(0).getType().equals(ItemType.FIRE)) {
+                items.remove(0);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public ItemFire placedFire() {
+        for (AbstractItem item : items) {
+            if (item.getType().equals(ItemType.FIRE)) {
+                return (ItemFire) item;
+            }
         }
         return null;
+    }
+
+    public boolean removeItem(AbstractItem item) {
+
+        for (AbstractItem currentItem : items) {
+            if (currentItem.getType().equals(item.getType())) {
+                items.remove(item);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

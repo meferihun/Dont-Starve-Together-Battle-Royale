@@ -139,4 +139,7 @@ public interface BaseInventory {
     AbstractItem getItem(int index);
 
     void itemBreak();
+
+    boolean hasItem(ItemType itemType, int amount);
+
 }

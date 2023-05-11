@@ -5,8 +5,6 @@ import prog1.kotprog.dontstarve.solution.inventory.items.EquipItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.EquippableItem;
 import prog1.kotprog.dontstarve.solution.inventory.items.ItemType;
 
-import java.security.PublicKey;
-
 public class Inventory implements BaseInventory {
     private final EquipItem equippedItem;
     private final AbstractItem[] inventory;
@@ -335,4 +333,16 @@ public class Inventory implements BaseInventory {
             }
         }
     }
+
+    public boolean hasItem(ItemType item, int amount) {
+        int inventoryAmount = 0;
+        for (int i = 0; i < inventory.length; i++) {
+            if (hasItem(i) && inventory[i].getType().equals(item)) {
+                inventoryAmount += inventory[i].getAmount();
+            }
+        }
+        return inventoryAmount >= amount;
+    }
+
+
 }

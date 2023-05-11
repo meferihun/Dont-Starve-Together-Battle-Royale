@@ -94,9 +94,7 @@ public class Character implements BaseCharacter {
      * @param hunger a karakter jóllakottsága
      */
     public void setHunger(float hunger) {
-        if (hunger >= 100) {
-            this.hunger = 100;
-        } else if (hunger < 100 && hunger > 0) {
+        if (hunger > 0) {
             this.hunger = hunger;
         } else {
             this.hunger = 0;
@@ -186,7 +184,6 @@ public class Character implements BaseCharacter {
         } else {
             this.lastAction = new ActionNone();
         }
-        // TODO execute-olni is kellene az action ez utan (meghivni az action logikat valahogy?)
     }
 
     /**

@@ -285,50 +285,109 @@ public final class GameManager {
      */
     public void tick(Action action) {
         if (isGameStarted() && !isGameEnded()) {
-
+            Position playerPosition = null;
+            List<Character> aliveNPCs = new ArrayList<>();
             // felhasznaloi action eloszor
             for (Character current : playersInTheGame) {
                 if (current.isPlayer() && current.isAlive()) {
-                    switch (action.getType()) {
-                        case STEP -> step(current, ((ActionStep) action).getDirection());
-                        case COLLECT_ITEM -> collect(current, current.getCurrentPosition());
-                        case EAT -> eat(current, ((ActionEat) action).getIndex());
-                        case COOK -> cook(current, ((ActionCook) action).getIndex());
-                        case CRAFT -> craft(current, CraftableItem.AXE);
-                    }
+                    playerPosition = current.getCurrentPosition();
+                    ActionChooser chooser = new ActionChooser(current, action);
+                    chooser.action();
                     current.setLastAction(action);
+                }
+                if (current.isAlive() && !current.isPlayer()) {
+                    aliveNPCs.add(current);
                 }
             }
 
             // majd vegigmegyunk mindenkin, az emberi jatekost is beleertve
-            for (Character current : playersInTheGame) {
-                if (current.isAlive()) {
-                    // gepi ellenfelek actionje
-                    if (!current.isPlayer()) {
-                        if (!isTutorialMode) {
-                            // TODO gepi logika, hogy milyen actionoket csinaljon
-                            current.setLastAction(new ActionNone());
-                        } else {
-                            current.setLastAction(new ActionNone());
+            for (Character current : aliveNPCs) {
+                // gepi ellenfelek actionje
+                if (!isTutorialMode) {
+                    float NPCx = current.getCurrentPosition().getX();
+                    float NPCy = current.getCurrentPosition().getY();
+
+                    float playerX = playerPosition.getX();
+                    float playerY = playerPosition.getY();
+
+                    float xDiff = playerX - NPCx;
+                    float yDiff = playerY - NPCy;
+
+                    int width = map[0].length;
+                    int height = map.length;
+
+                    if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                        if (xDiff > 0) {
+                            if (xDiff + current.getSpeed() < width) {
+                                if (step(current, Direction.RIGHT)) {
+                                    attack(current);
+                                    current.setLastAction(new ActionStepAndAttack(Direction.RIGHT));
+                                }
+                            }
+                        } else if (xDiff < 0) {
+                            if (xDiff - current.getSpeed() >= 0) {
+                                if (step(current, Direction.LEFT)) {
+                                    attack(current);
+                                    current.setLastAction(new ActionStepAndAttack(Direction.LEFT));
+                                }
+                            }
+                        }
+                    } else {
+                        if (yDiff - current.getSpeed() >= 0) {
+                            if (yDiff > 0) {
+                                if (step(current, Direction.UP)) {
+                                    attack(current);
+                                    current.setLastAction(new ActionStepAndAttack(Direction.UP));
+                                }
+                            }
+                        } else if (yDiff < 0) {
+                            if (yDiff + current.getSpeed() < height) {
+                                if (step(current, Direction.DOWN)) {
+                                    attack(current);
+                                    current.setLastAction(new ActionStepAndAttack(Direction.DOWN));
+                                }
+                            }
                         }
                     }
-                    // TODO koron beluli ehseg erteket kulon kell tarolni es kezelni? vagy a setHunger()-t atirni, hogy engedjen 100 folottit
-                    /*
-                     * A jóllakottság egy körön belül mehet 100 fölé, de a kör végével már maximum 100 lehet.
-                     * Pl. ha a jóllakottságunk 81 és megeszünk egy nyers bogyót, akkor a jóllakottság ezzel 101 lesz,
-                     * viszont a kör végén ez csökken 0.4-del, tehát a kör végén 100 lesz (nem pedig 99.6).
-                     */
-                    current.setHunger(current.getHunger() - 0.4f);
+
+
+                } else {
+                    current.setLastAction(new ActionNone());
+                }
+            }
+            for (Character current : playersInTheGame) {
+                if (current.isAlive()) {
+                    if (current.getHunger() > 100) {
+                        current.setHunger(100);
+                    } else {
+                        current.setHunger(current.getHunger() - 0.4f);
+                    }
                     if (current.getHunger() == 0) {
                         current.setHp(current.getHp() - 5);
                     }
-                    // az eletero es jollakottsag alapjan valtozni fog a sebessege
                     current.setSpeed();
+                    if (current.getInventory().equippedItem() != null && current.getInventory().equippedItem().getType().equals(ItemType.TORCH) && current.getInventory().equippedItem().percentage() > 0) {
+                        current.getInventory().equippedItem().setPercentage(current.getInventory().equippedItem().percentage() - 5);
+                        if (current.getInventory().equippedItem().percentage() == 0) {
+                            current.getInventory().itemBreak();
+                        }
+                    }
                 }
             }
-            currentTime++;
         }
+        for (int x = 0; x < map[0].length; x++) {
+            for (Field[] fields : map) {
+                if (fields[x].hasFire()) {
+                    fields[x].placedFire().setTick(fields[x].placedFire().getTick() + 1);
+                    if (fields[x].placedFire().getTick() > 60) {
+                        fields[x].removeItem(fields[x].items()[fields[x].items().length - 1]);
+                    }
+                }
+            }
+        }
+        currentTime++;
     }
+
 
     /**
      * Ezen metódus segítségével lekérdezhető az aktuális időpillanat.<br>
@@ -384,7 +443,9 @@ public final class GameManager {
                     }
                 }
             }
-            return aliveOnes == 1 && isPlayerAlive;
+            if (!isPlayerAlive) {
+                return true;
+            } else return isPlayerAlive && aliveOnes == 1;
         }
         return false;
     }
@@ -403,7 +464,13 @@ public final class GameManager {
         }
     }
 
-    public Position step(Character character, Direction direction) {
+    /**
+     * a karakter mozgása
+     *
+     * @param character az adott karakter
+     * @param direction lép a megadott irányba, ha tud
+     */
+    public boolean step(Character character, Direction direction) {
         Position position = character.getCurrentPosition();
         float x = position.getX();
         float y = position.getY();
@@ -421,54 +488,70 @@ public final class GameManager {
         if (x >= 0 && x < width && y >= 0 && y < height && map[Math.round(y)][Math.round(x)].isWalkable()) {
             position.setX(x);
             position.setY(y);
+            return true;
         }
-
-        return position;
+        return false;
     }
 
-    public void collect(Character character, Position position) {
-        Field field = map[(int) position.getNearestWholePosition().getX()][(int) position.getNearestWholePosition().getY()];
-        
-        if (field.hasBerry()) {
-            character.getInventory().addItem(new ItemRawBerry(1));
-        } else if (field.hasCarrot()) {
-            character.getInventory().addItem(new ItemRawCarrot(1));
-        } else if (field.hasTwig()) {
-            field.setExtractionProgress(field.getExtractionProgress() + 0.5f);
-            if (field.getExtractionProgress() == 1) {
-                character.getInventory().addItem(new ItemTwig(1));
-                field.setExtractionProgress(0);
-            }
-        } else if (field.hasStone()) {
-            if (field.getExtractionProgress() < 1) {
+    /**
+     * a karakter interakcioja a palyaval
+     *
+     * @param character ha az aktualis mezon van amit be tud gyujteni akkor azt megteszi
+     */
+    public void interact(Character character) {
+        float x = character.getCurrentPosition().getNearestWholePosition().getX();
+        float y = character.getCurrentPosition().getNearestWholePosition().getY();
+        float width = map[0].length;
+        float height = map.length;
+
+        if (x < width && x >= 0 && y < height && y >= 0) {
+            Field field = map[(int) y][(int) x];
+
+            if (field.hasBerry()) {
+                character.getInventory().addItem(new ItemRawBerry(1));
+                map[(int) y][(int) x].setColor(0xFF32C832);
+
+            } else if (field.hasCarrot()) {
+                character.getInventory().addItem(new ItemRawCarrot(1));
+                map[(int) y][(int) x].setColor(0xFF32C832);
+
+            } else if (field.hasTwig()) {
+                field.setExtractionProgress(field.getExtractionProgress() + 0.5f);
+                if (field.getExtractionProgress() == 1) {
+                    character.getInventory().addItem(new ItemTwig(1));
+                    map[(int) y][(int) x].setColor(0xFF32C832);
+                }
+
+            } else if (field.hasStone()) {
                 if (character.getInventory().equippedItem() != null && character.getInventory().equippedItem().getType().equals(ItemType.PICKAXE)) {
-                    if (character.getInventory().equippedItem().percentage() > 0) {
-                        field.setExtractionProgress(field.getExtractionProgress() + 0.25f);
-                        character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 3.34f);
-                        if (character.getInventory().equippedItem().percentage() == 0) {
-                            character.getInventory().itemBreak();
-                        }
-                        if (field.getExtractionProgress() == 1) {
-                            field.placeItem(new ItemStone(3));
-                            field.setColor(0xFF32C832);
-                            field.setExtractionProgress(0);
+                    if (field.getExtractionProgress() < 1) {
+                        if (character.getInventory().equippedItem().percentage() > 0) {
+                            field.setExtractionProgress(field.getExtractionProgress() + 0.2f);
+                            character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 3.34f);
+                            if (character.getInventory().equippedItem().percentage() == 0) {
+                                character.getInventory().itemBreak();
+                            }
+                            if (field.getExtractionProgress() == 1) {
+                                field.placeItem(new ItemStone(3));
+                                map[(int) y][(int) x].setColor(0xFF32C832);
+                            }
                         }
                     }
                 }
-            }
-        } else if (field.hasTree()) {
-            if (field.getExtractionProgress() < 1) {
+
+            } else if (field.hasTree()) {
                 if (character.getInventory().equippedItem() != null && character.getInventory().equippedItem().getType().equals(ItemType.AXE)) {
-                    if (character.getInventory().equippedItem().percentage() > 0) {
-                        field.setExtractionProgress(field.getExtractionProgress() + 0.2f);
-                        character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 2.5f);
-                        if (character.getInventory().equippedItem().percentage() == 0) {
-                            character.getInventory().itemBreak();
-                        }
-                        if (field.getExtractionProgress() == 1) {
-                            field.placeItem(new ItemLog(2));
-                            field.setColor(0xFF32C832);
-                            field.setExtractionProgress(0);
+                    if (field.getExtractionProgress() < 1) {
+                        if (character.getInventory().equippedItem().percentage() > 0) {
+                            field.setExtractionProgress(field.getExtractionProgress() + 0.25f);
+                            character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 2.5f);
+                            if (character.getInventory().equippedItem().percentage() == 0) {
+                                character.getInventory().itemBreak();
+                            }
+                            if (field.getExtractionProgress() == 1) {
+                                field.placeItem(new ItemLog(2));
+                                map[(int) y][(int) x].setColor(0xFF32C832);
+                            }
                         }
                     }
                 }
@@ -476,75 +559,303 @@ public final class GameManager {
         }
     }
 
+    /**
+     * a karakter etkezese
+     *
+     * @param character
+     * @param index     eszik az adott inventory slotrol ha az eheto
+     */
     public void eat(Character character, int index) {
-        ItemType itemToEat = character.getInventory().eatItem(index);
-        switch (itemToEat) {
-            case RAW_BERRY, COOKED_CARROT, RAW_CARROT, COOKED_BERRY -> {
-                character.setHunger(character.getHunger() + itemToEat.getHungerModifier());
-                character.setHp(character.getHp() + itemToEat.getHealthModifier());
+        if (index < 10 && index >= 0 && character.getInventory().getItem(index).getType().isEdible() && character.getHunger() < 100) {
+            ItemType itemToEat = character.getInventory().eatItem(index);
+            switch (itemToEat) {
+                case RAW_BERRY, COOKED_CARROT, RAW_CARROT, COOKED_BERRY -> {
+                    character.setHunger(character.getHunger() + itemToEat.getHungerModifier());
+                    character.setHp(character.getHp() + itemToEat.getHealthModifier());
+                }
             }
         }
     }
 
+    /**
+     * a karakter fozese
+     *
+     * @param character
+     * @param index     m karakter megfozi az inventory adott elemet ha az fozhato es tabortuzon all a karakter
+     */
     public void cook(Character character, int index) {
         float x = character.getCurrentPosition().getNearestWholePosition().getX();
         float y = character.getCurrentPosition().getNearestWholePosition().getY();
-        if (map[(int) x][(int) y].hasFire()) {
-            character.getInventory().cookItem(index);
+        float width = map[0].length;
+        float height = map.length;
+        if (x < width && x >= 0 && y < height && y >= 0) {
+            if (map[(int) y][(int) x].hasFire() && map[(int) y][(int) x].placedFire().getTick() < 60) {
+                if (index >= 0 && index < 10) {
+                    if (character.getInventory().getItem(index).getType().isCookable()) {
+                        ItemType cookable = character.getInventory().getItem(index).getType();
+                        character.getInventory().cookItem(index);
+                        switch (cookable) {
+                            case RAW_BERRY -> {
+                                character.getInventory().addItem(new ItemCookedBerry(1));
+                            }
+                            case RAW_CARROT -> {
+                                character.getInventory().addItem(new ItemCookedCarrot(1));
+                            }
+                        }
+                    }
+                }
+            }
         }
-
     }
 
-    public void craft(Character character, CraftableItem craftableItem) {
+    /**
+     * a karakter barkacsolasa
+     *
+     * @param character
+     * @param craftableItem a karakter lekraftolja az adott itemet havvan ra eleg nyersanyagad
+     */
+    public void craft(Character character, ItemType craftableItem) {
+        float x = character.getCurrentPosition().getNearestWholePosition().getX();
+        float y = character.getCurrentPosition().getNearestWholePosition().getY();
+        int width = map[0].length;
+        int height = map.length;
+
+        if (x < width && x >= 0 && y < height && y >= 0) {
+            switch (craftableItem) {
+
+                case AXE -> {
+                    if (character.getInventory().hasItem(ItemType.TWIG, 3)) {
+                        character.getInventory().removeItem(ItemType.TWIG, 3);
+                        if (character.getInventory().emptySlots() > 0) {
+                            character.getInventory().addItem(new ItemAxe());
+                        } else {
+                            map[(int) y][(int) x].placeItem(new ItemAxe());
+                        }
+                    }
+                }
+
+                case PICKAXE -> {
+                    if (character.getInventory().hasItem(ItemType.TWIG, 2) && character.getInventory().hasItem(ItemType.LOG, 2)) {
+                        character.getInventory().removeItem(ItemType.TWIG, 2);
+                        character.getInventory().removeItem(ItemType.LOG, 2);
+                        if (character.getInventory().emptySlots() > 0) {
+                            character.getInventory().addItem(new ItemPickaxe());
+                        } else {
+                            map[(int) y][(int) x].placeItem(new ItemPickaxe());
+                        }
+                    }
+                }
+
+                case SPEAR -> {
+                    if (character.getInventory().hasItem(ItemType.LOG, 2) && character.getInventory().hasItem(ItemType.STONE, 2)) {
+                        character.getInventory().removeItem(ItemType.LOG, 2);
+                        character.getInventory().removeItem(ItemType.STONE, 2);
+                        if (character.getInventory().emptySlots() > 0) {
+                            character.getInventory().addItem(new ItemSpear());
+                        } else {
+                            map[(int) y][(int) x].placeItem(new ItemSpear());
+                        }
+                    }
+                }
+
+                case TORCH -> {
+                    if (character.getInventory().hasItem(ItemType.TWIG, 3) && character.getInventory().hasItem(ItemType.LOG, 1)) {
+                        character.getInventory().removeItem(ItemType.TWIG, 3);
+                        character.getInventory().removeItem(ItemType.LOG, 1);
+                        if (character.getInventory().emptySlots() > 0) {
+                            character.getInventory().addItem(new ItemTorch());
+                        } else {
+                            map[(int) y][(int) x].placeItem(new ItemTorch());
+                        }
+                    }
+                }
+
+                case FIRE -> {
+                    if (map[(int) y][(int) x].isEmpty()) {
+                        if (!map[(int) y][(int) x].hasFire()) {
+                            if (character.getInventory().hasItem(ItemType.TWIG, 2) && character.getInventory().hasItem(ItemType.LOG, 2) && character.getInventory().hasItem(ItemType.STONE, 4)) {
+                                character.getInventory().removeItem(ItemType.TWIG, 2);
+                                character.getInventory().removeItem(ItemType.LOG, 2);
+                                character.getInventory().removeItem(ItemType.STONE, 4);
+                                map[(int) y][(int) x].placeItem(new ItemFire());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * a karakter item eldobasa az adott mezore
+     *
+     * @param character
+     * @param index     az adott inventory slot tartalmat dobja ki a mezore
+     */
+    public void drop(Character character, int index) {
+        float x = character.getCurrentPosition().getNearestWholePosition().getX();
+        float y = character.getCurrentPosition().getNearestWholePosition().getY();
+        if (index < 10 && index >= 0 && character.getInventory().getItem(index) != null) {
+            AbstractItem droppableItem = character.getInventory().getItem(index);
+            character.getInventory().dropItem(index);
+            map[(int) y][(int) x].placeItem(droppableItem);
+        }
+    }
+
+    /**
+     * a karakter itemek mozgatasa a 2 megadott pozicio kozott
+     *
+     * @param character
+     * @param index     az index ahonnan mozgatunk
+     * @param newIndex  az index ahova mozgatunk
+     */
+    public void move(Character character, int index, int newIndex) {
+        if (index >= 0 && index < 10 && newIndex >= 0 && newIndex < 10 && character.getInventory().getItem(index) != null && character.getInventory().getItem(newIndex) == null) {
+            character.getInventory().moveItem(index, newIndex);
+        }
+    }
+
+    /**
+     * az inventoryban 2 item megcserelese
+     *
+     * @param character
+     * @param index1
+     * @param index2
+     */
+    public void swap(Character character, int index1, int index2) {
+        if (index1 >= 0 && index1 < 10 && index2 >= 0 && index2 < 10 && character.getInventory().getItem(index1) != null && character.getInventory().getItem(index2) != null) {
+            character.getInventory().swapItems(index1, index2);
+        }
+    }
+
+    /**
+     * 2 stackelheto item osszeorakasa
+     *
+     * @param character
+     * @param index1
+     * @param index2
+     */
+    public void combine(Character character, int index1, int index2) {
+        character.getInventory().combineItems(index1, index2);
+    }
+
+    /**
+     * a karakter felszed egy eldobott itemet a foldrol
+     *
+     * @param character
+     */
+    public void collect(Character character) {
+        float x = character.getCurrentPosition().getNearestWholePosition().getX();
+        float y = character.getCurrentPosition().getNearestWholePosition().getY();
+        float width = map[0].length;
+        float height = map.length;
+
+        if (x < width && x >= 0 && y < height && y >= 0) {
+            AbstractItem[] items = map[(int) y][(int) x].items();
+            if (items != null && items.length > 0) {
+                AbstractItem pickable = items[0];
+                if (pickable != null && !pickable.getType().equals(ItemType.FIRE)) {
+                    if (character.getInventory().addItem(pickable)) {
+                        map[(int) y][(int) x].pickUpItem();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * a karakter berakja a kezebe az eszkozt
+     *
+     * @param character
+     * @param index
+     */
+    public void equip(Character character, int index) {
+        if (index >= 0 && index < 10 && character.getInventory().getItem(index) != null && character.getInventory().getItem(index).getType().isEquippable()) {
+            character.getInventory().equipItem(index);
+        }
+    }
+
+    /**
+     * a karakter kiveszi a kezebol az eszkozt
+     *
+     * @param character
+     */
+    public void unequip(Character character) {
+        if (character.getInventory().equippedItem() != null) {
+            float x = character.getCurrentPosition().getNearestWholePosition().getX();
+            float y = character.getCurrentPosition().getNearestWholePosition().getY();
+
+            if (character.getInventory().emptySlots() == 0) {
+                AbstractItem equipped = character.getInventory().equippedItem();
+                map[(int) y][(int) x].placeItem(equipped);
+            }
+            character.getInventory().unequipItem();
+        }
+    }
+
+    /**
+     * a karakter tamad
+     *
+     * @param character
+     */
+    public void attack(Character character) {
         float x = character.getCurrentPosition().getNearestWholePosition().getX();
         float y = character.getCurrentPosition().getNearestWholePosition().getY();
 
-        switch (craftableItem) {
+        if (!playersInTheGame.isEmpty()) {
+            for (Character enemy : playersInTheGame) {
+                if (enemy != null && enemy.isAlive() && enemy != character) {
+                    if (enemy.getCurrentPosition().getDistance(x, y) <= 2) {
+                        if (character.getInventory().equippedItem() != null) {
+                            switch (character.getInventory().equippedItem().getType()) {
 
-            case AXE -> {
-                if (character.getInventory().removeItem(ItemType.TWIG, 3)) {
-                    if (character.getInventory().emptySlots() > 0) {
-                        character.getInventory().addItem(new ItemAxe());
-                    } else {
-                        map[(int) x][(int) y].placeItem(new ItemAxe());
+                                case SPEAR -> {
+                                    enemy.setHp(enemy.getHp() - 19);
+                                    character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 10);
+                                    if (character.getInventory().equippedItem().percentage() == 0) {
+                                        character.getInventory().itemBreak();
+                                    }
+                                    return;
+                                }
+
+                                case AXE -> {
+                                    enemy.setHp(enemy.getHp() - 8);
+                                    character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 2.5f);
+                                    if (character.getInventory().equippedItem().percentage() == 0) {
+                                        character.getInventory().itemBreak();
+                                    }
+                                    return;
+                                }
+
+                                case PICKAXE -> {
+                                    enemy.setHp(enemy.getHp() - 8);
+                                    character.getInventory().equippedItem().setPercentage(character.getInventory().equippedItem().percentage() - 3.34f);
+                                    if (character.getInventory().equippedItem().percentage() == 0) {
+                                        character.getInventory().itemBreak();
+                                    }
+                                    return;
+                                }
+
+                                case TORCH -> enemy.setHp(enemy.getHp() - 6);
+                            }
+                        } else {
+                            enemy.setHp(enemy.getHp() - 4);
+                        }
                     }
-                }
-            }
-
-            case PICKAXE -> {
-                if (character.getInventory().removeItem(ItemType.TWIG, 2) && character.getInventory().removeItem(ItemType.LOG, 2)) {
-                    if (character.getInventory().emptySlots() > 0) {
-                        character.getInventory().addItem(new ItemPickaxe());
-                    } else {
-                        map[(int) x][(int) y].placeItem(new ItemPickaxe());
-                    }
-                }
-            }
-
-            case SPEAR -> {
-                if (character.getInventory().removeItem(ItemType.LOG, 2) && character.getInventory().removeItem(ItemType.STONE, 2)) {
-                    if (character.getInventory().emptySlots() > 0) {
-                        character.getInventory().addItem(new ItemSpear());
-                    } else {
-                        map[(int) x][(int) y].placeItem(new ItemSpear());
-                    }
-                }
-            }
-
-            case TORCH -> {
-                if (character.getInventory().removeItem(ItemType.TWIG, 3) && character.getInventory().removeItem(ItemType.LOG, 1)) {
-                    if (character.getInventory().emptySlots() > 0) {
-                        character.getInventory().addItem(new ItemTorch());
-                    } else {
-                        map[(int) x][(int) y].placeItem(new ItemTorch());
-                    }
-                }
-            }
-
-            case FIRE -> {
-                if (character.getInventory().removeItem(ItemType.TWIG, 2) && character.getInventory().removeItem(ItemType.LOG, 2)) {
-                    if (character.getInventory().removeItem(ItemType.STONE, 4)) {
-                        map[(int) x][(int) y].placeItem(new ItemFire());
+                    if (!enemy.isAlive()) {
+                        float enemyCoX = enemy.getCurrentPosition().getNearestWholePosition().getX();
+                        float enemyCoY = enemy.getCurrentPosition().getNearestWholePosition().getY();
+                        if (enemy.getInventory().equippedItem() != null) {
+                            AbstractItem equipped = enemy.getInventory().equippedItem();
+                            enemy.getInventory().unequipItem();
+                            map[(int) enemyCoY][(int) enemyCoX].placeItem(equipped);
+                        }
+                        for (int i = 0; i < 10; i++) {
+                            if (enemy.getInventory().getItem(i) != null) {
+                                drop(enemy, i);
+                            }
+                        }
+                        return;
                     }
                 }
             }

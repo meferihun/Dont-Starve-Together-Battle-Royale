@@ -23,6 +23,7 @@ public class ActionCraft extends Action {
 
     /**
      * Az itemType gettere.
+     *
      * @return a lekraftolandó item típusa
      */
     public ItemType getItemType() {

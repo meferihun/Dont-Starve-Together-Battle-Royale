@@ -32,12 +32,12 @@ public abstract class EquippableItem extends AbstractItem {
     }
 
     public void setPercentage(float percentage) {
-        if (percentage < 0) {
-            this.percentage = 0;
-        } else if (percentage < 100) {
-            this.percentage = percentage;
-        } else if (percentage >= 100) {
+        if (percentage >= 100) {
             this.percentage = 100;
+        } else if (percentage > 0 && percentage < 100) {
+            this.percentage = percentage;
+        } else {
+            this.percentage = 0;
         }
     }
 }

@@ -6,4 +6,5 @@ public enum CraftableItem {
     SPEAR,
     TORCH,
     FIRE;
+
 }
